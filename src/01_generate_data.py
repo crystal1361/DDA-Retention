@@ -14,17 +14,71 @@ WHY SYNTHETIC (not real / not downloaded):
   inference methodology work / portfolio projects, and it's a much stronger
   thing to say in an interview than "I ran a package on some CSV."
 
-Three analytic samples are generated, matching how you'd actually study these
-three questions in practice (not one giant table):
+Four analytic samples are generated, matching how you'd actually study these
+four questions in practice (not one giant table):
   1. predictive_data.csv   - cross-sectional account snapshot -> multi-class
                               churn-mode prediction (mirrors the real project)
   2. rdd_data.csv           - account-month withdrawal events -> RDD around the
                               30%-of-balance RM-outreach trigger
   3. did_data.csv           - account-level DD-stop events -> staggered-rollout
-                              DiD around the "$100 for 2 DDs" retention offer
+                              DiD around the "$100 for 2 DDs" retention offer,
+                              rolled out in PRIORITY WAVES by customer value
+                              (highest-value accounts first) because RM/ops
+                              capacity to administer the offer is limited --
+                              see the "why value-tiered, not random" note below
+  4. dormant_data.csv       - accounts flagged as at risk of going dormant,
+                              some of which an internal ops rule (not a design
+                              we control, not threshold-based, not staggered)
+                              selects for a re-engagement outreach call. No
+                              RDD- or DiD-style structure exists for this
+                              intervention -- that's the point: it's the case
+                              that motivates 07_doubleml_dormant.py.
 
 All "true" effect sizes are defined once in TRUTH and reused later to check
-whether RDD / DiD recover them.
+whether RDD / DiD / DoubleML recover them.
+
+---------------------------------------------------------------------------
+A NOTE ON "value_score" / account economic value (read this if you're asked
+"why is a customer worth X" in an interview):
+---------------------------------------------------------------------------
+Earlier drafts of this project scored each account with an unexplained
+weighted sum of raw features (e.g. product_count*3 + tenure_months*0.05 +
+balance_tier*2). That's indefensible under questioning -- the three
+components are in different units (a 1-6 count, a number of months, a 0-4
+bucket), so there is no principled way to justify why the weights are 3,
+0.05, and 2 specifically. ANY numbers you pick for a formula like that will
+draw the same "why these weights" question, because the formula's structure
+-- not the specific numbers -- is what's unjustifiable.
+
+The fix used here: anchor "value" in an actual unit of value (dollars), not
+an arbitrary index. For a deposit account, the economics are simple and
+well understood --
+  - balance drives net-interest-margin revenue (the bank lends out / invests
+    the deposits and earns a spread on them), so it's the base term and it's
+    ALREADY denominated in dollars -- no weight needed.
+  - each additional product held brings incremental cross-sell revenue
+    (a second product is worth more spend-with-us, not just "more loyalty"),
+    modeled as a multiplicative uplift on that base, not an additive term in
+    a different unit.
+account_value = balance * (1 + PRODUCT_VALUE_UPLIFT * product_count)
+
+PRODUCT_VALUE_UPLIFT below is an assumed rate (15% incremental value per
+product held), explicitly labeled as an assumption because real per-product
+margin data isn't available here. That's fine to say out loud in an
+interview -- the defensible part isn't "I know the exact right number", it's
+(a) the formula has an actual economic interpretation you can explain in one
+sentence, and (b) 08_business_impact.py runs a sensitivity check showing the
+prioritization/optimization conclusions don't flip under a plausible range of
+this assumption, so the exact rate isn't load-bearing.
+
+Tenure and engagement are deliberately NOT part of account_value -- they are
+RISK/behavioral signals (does this account look like it's about to leave?),
+which is a different question from VALUE (what is this account worth if we
+keep it?). Conflating value and risk into one blended score is exactly what
+made the old formula impossible to defend -- keeping them as two separate,
+clearly-labeled concepts (value_score here; churn-mode probabilities from
+03_predictive_model.py) is itself a modeling decision worth stating plainly
+if asked.
 """
 
 import numpy as np
@@ -38,21 +92,54 @@ rng = np.random.default_rng(SEED)
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 os.makedirs(OUT_DIR, exist_ok=True)
 
+# Assumed incremental value per product held, used to turn raw balance into
+# an account_value estimate (see the module docstring above for why this
+# formula looks the way it does). Kept as a named constant -- not a magic
+# number buried in a formula -- specifically so it's easy to point to in an
+# interview and easy to sensitivity-test in 08_business_impact.py.
+PRODUCT_VALUE_UPLIFT = 0.15
+
+
+def account_value(balance, product_count):
+    """Dollar-denominated proxy for 'what is this account worth'.
+
+    Deliberately built from only two inputs that are directly economic
+    (deposit balance -> NII revenue; product depth -> cross-sell revenue),
+    combined multiplicatively so both terms stay in dollar units throughout.
+    Used consistently everywhere "value" is needed: the predictive dataset,
+    the DiD rollout-priority ordering, and the optimization objective --
+    one formula, one place it's defined, no risk of the three layers of the
+    project quietly disagreeing about what a customer is worth.
+    """
+    return balance * (1 + PRODUCT_VALUE_UPLIFT * product_count)
+
+
 # ---------------------------------------------------------------------------
 # Ground-truth effects baked into the DGP (kept in one place so later scripts
-# can grade the RDD/DiD estimators against them).
+# can grade the RDD/DiD/DoubleML estimators against them).
 # ---------------------------------------------------------------------------
 TRUTH = {
     "rdd_cutoff": 30.0,                     # withdrawal % of balance that triggers RM outreach
     "rdd_true_effect_logit": -0.90,         # jump in logit(churn_next_month) caused by RM contact
-    "did_adoption_months": {                # calendar month (0-23) each region's offer goes live
-        "R00": 8, "R01": 8, "R02": 8,       # cohort A
-        "R03": 14, "R04": 14, "R05": 14,    # cohort B
-        "R06": 20, "R07": 20,               # cohort C
-        "R08": None, "R09": None,           # never-treated (within the 24-month window)
+    "did_value_tier_labels": [              # ordered highest-value -> lowest-value; see
+        "tier1_top25pct",                   # generate_did_dataset() for why rollout is
+        "tier2_next25pct",                  # value-PRIORITIZED rather than random/regional
+        "tier3_next25pct",
+        "tier4_bottom25pct",
+    ],
+    "did_adoption_months": {                # calendar month (0-23) each value tier's offer
+        "tier1_top25pct": 8,                # goes live -- highest value first, because RM/ops
+        "tier2_next25pct": 14,              # capacity to administer the offer can't reach
+        "tier3_next25pct": 20,              # everyone on day one
+        "tier4_bottom25pct": None,          # never reached in-window -- capacity ran out
     },
     "did_true_effect_logit_max": -0.90,     # steady-state effect once the offer is fully ramped up
     "did_ramp_months": 3,                   # months for the effect to ramp from 0 to steady-state
+    "dormant_true_effect_logit": -0.50,     # effect of re-engagement outreach on
+                                             # logit(bad_outcome); smaller than the other two
+                                             # plays' effects, and -- unlike them -- estimated
+                                             # with a weaker (selection-on-observables) design;
+                                             # see 07_doubleml_dormant.py
 }
 
 with open(os.path.join(OUT_DIR, "ground_truth.json"), "w") as f:
@@ -79,8 +166,10 @@ def generate_predictive_dataset(n=40_000):
     engagement_score = rng.normal(50, 20, size=n).clip(0, 100)       # higher = more engaged/active
     dormancy_streak_months = rng.poisson(0.4, size=n).clip(0, 6)
 
-    balance_tier = pd.qcut(balance, 5, labels=False)  # 0-4
-    value_score = (product_count * 3 + tenure_months * 0.05 + balance_tier * 2)
+    balance_tier = pd.qcut(balance, 5, labels=False)  # 0-4, kept as a MODEL FEATURE (a coarse,
+    # nonlinear-friendly version of balance for the XGBoost classifier) -- distinct from
+    # value_score below, which needs to stay in actual dollars, not a 0-4 bucket.
+    value_score = account_value(balance, product_count)
 
     # class-specific logits, "none" (stay) is the reference category (logit 0).
     # Intercepts are set low so the overall churn rate lands in the low
@@ -168,32 +257,85 @@ def generate_rdd_dataset(n=15_000):
 
 
 # ---------------------------------------------------------------------------
-# 3) DiD dataset: DD-stop events, staggered offer rollout across regions
+# 3) DiD dataset: DD-stop events, staggered offer rollout by CUSTOMER VALUE
+#    TIER (not region)
 # ---------------------------------------------------------------------------
+# WHY VALUE-TIERED, NOT RANDOM / NOT REGIONAL:
+# The real constraint that makes this a staggered rollout in the first place
+# is RM/ops capacity -- see RM_CAPACITY in 06_optimization.py, the same
+# constraint shows up here as the reason NOT everyone gets the offer on day
+# one. Given that constraint, a bank prioritizes: highest-value accounts get
+# the offer first, the lowest-value quartile never gets reached inside the
+# observed window. That's a believable, motivated staggering mechanism (a
+# region-by-region rollout for a call-center-administered retention offer is
+# a weaker story -- why would geography determine rollout order here?).
+#
+# This choice has a real consequence for identification that's worth stating
+# out loud: treatment TIMING is now correlated with account_value, and
+# account_value is independently correlated with churn risk (higher-value
+# accounts -- more products, bigger balances -- are stickier on their own,
+# offer or no offer). That means a NAIVE comparison of "early-treated
+# (high-value) vs. late/never-treated (low-value)" accounts is confounded by
+# value itself, not just by the offer. This is deliberate: it's what makes
+# naive static TWFE break in an intuitive, explainable way (see
+# 05_did_analysis.py), and it's exactly the kind of "already-treated cohorts
+# get used as part of the comparison for later cohorts" bias that
+# Goodman-Bacon (2021) describes for staggered-adoption designs.
+#
+# The DGP still keeps the tier's effect on churn as a pure LEVEL shift (not
+# interacted with event_month), so -- exactly as with the earlier
+# region-based version -- pre-trends stay parallel across tiers BY
+# CONSTRUCTION. That is intentional: it means the parallel-trends check in
+# 02_validate_design.py is still testing something real (whether the
+# construction actually delivers what it's supposed to), not something
+# rigged to always pass.
 def generate_did_dataset(n=12_000):
-    regions = list(TRUTH["did_adoption_months"].keys())
-    region_id = rng.choice(regions, size=n)
-    event_month = rng.integers(0, 24, size=n)  # calendar month (0-23) of the DD-stop event
+    tier_labels = TRUTH["did_value_tier_labels"]
 
-    adoption_month = np.array([
-        TRUTH["did_adoption_months"][r] if TRUTH["did_adoption_months"][r] is not None else 999
-        for r in region_id
-    ])
-    offer_live = (event_month >= adoption_month).astype(int)
-
+    # Generate the SAME underlying account characteristics used elsewhere,
+    # so that account_value() here means the same thing it means in
+    # predictive_data.csv and in 06_optimization.py.
     tenure_months = rng.gamma(shape=2.2, scale=28, size=n).clip(1, 300)
     product_count = rng.choice([1, 2, 3, 4, 5, 6], size=n,
                                 p=[0.28, 0.27, 0.20, 0.14, 0.08, 0.03])
+    balance = np.exp(rng.normal(8.2, 1.1, size=n))
+    acct_value = account_value(balance, product_count)
 
-    # region-level FIXED intercepts only (level shifts) -- deliberately NOT
-    # interacted with event_month, so pre-trends stay parallel across cohorts
-    # by construction. A common, gentle calendar-time trend is shared by
-    # every region.
-    region_fx = {r: v for r, v in zip(regions, rng.normal(0, 0.20, size=len(regions)))}
-    region_effect = np.array([region_fx[r] for r in region_id])
+    # Bucket into value quartiles -- this is the ONLY thing that determines
+    # which wave an account is rolled into. Computed on this account's own
+    # (pre-period, static) balance/product_count -- i.e. on characteristics
+    # observed BEFORE the offer could have changed anything -- so this is
+    # not conditioning on a post-treatment-affected variable ("bad control").
+    # In this cross-sectional DGP balance/product_count are exogenous by
+    # construction, but the principle is one worth stating in an interview
+    # regardless: never tier customers on a metric the treatment itself could
+    # have already moved.
+    # NOTE: pd.qcut assigns labels[0] to the LOWEST-value bin and labels[-1]
+    # to the HIGHEST-value bin (ascending order) -- tier_labels is written
+    # highest-value-first for readability elsewhere, so it has to be
+    # reversed here to land "tier1_top25pct" on the accounts that actually
+    # have the highest account_value.
+    value_tier = pd.qcut(acct_value, 4, labels=list(reversed(tier_labels)))
+
+    event_month = rng.integers(0, 24, size=n)  # calendar month (0-23) of the DD-stop event
+
+    adoption_month_map = TRUTH["did_adoption_months"]
+    adoption_month = np.array([
+        adoption_month_map[t] if adoption_month_map[t] is not None else 999
+        for t in value_tier
+    ])
+    offer_live = (event_month >= adoption_month).astype(int)
+
+    # Tier-level FIXED intercepts (level shifts only, never interacted with
+    # event_month -- see the module note above on why that preserves
+    # parallel pre-trends by construction). Deliberately correlated with
+    # account_value's rank so that higher tiers -> lower baseline churn,
+    # which is what makes the naive early-vs-late comparison confounded.
+    tier_rank = {t: i for i, t in enumerate(tier_labels)}  # 0=top tier ... 3=bottom tier
+    tier_effect = np.array([-0.25 * (3 - tier_rank[t]) for t in value_tier])  # top tier: -0.75, bottom: 0
     common_trend = -0.01 * event_month  # slow, shared decline in post-DD-stop churn risk over time
 
-    baseline_logit = (-1.0 + common_trend + region_effect
+    baseline_logit = (-1.0 + common_trend + tier_effect
                        - 0.03 * product_count - 0.006 * tenure_months
                        + rng.normal(0, 0.35, n))
 
@@ -208,13 +350,29 @@ def generate_did_dataset(n=12_000):
     final_logit = baseline_logit + effect_logit
     churned_within_window = rng.binomial(1, sigmoid(final_logit))
 
-    cohort = np.where(adoption_month == 999, "never",
-              np.where(adoption_month == 8, "cohortA_m8",
-              np.where(adoption_month == 14, "cohortB_m14", "cohortC_m20")))
+    # Row-level TRUE causal effect on the probability scale: sigmoid(with
+    # treatment) - sigmoid(without), computed directly from the DGP's own
+    # baseline_logit for THIS row (not approximated from some other group's
+    # average, which would be wrong once tiers differ substantially in
+    # baseline level -- exactly the situation this dataset deliberately
+    # creates). Stored so 05_did_analysis.py can grade estimators against an
+    # exact number instead of an approximation. This is only knowable
+    # because we, the simulator, control the DGP -- it's a validation-only
+    # convenience, not something you'd ever have in a real dataset.
+    true_effect_prob = sigmoid(final_logit) - sigmoid(baseline_logit)
+
+    # "cohort" is kept as the column name (rather than renaming it everywhere)
+    # so 02_validate_design.py's pre-trends check and 05_did_analysis.py's
+    # clean-control estimator work unchanged -- they only ever cared that
+    # "cohort" partitions accounts into rollout-timing groups, never that the
+    # groups were regions specifically.
+    cohort = value_tier.astype(str)
+    cohort = np.where(cohort == "tier4_bottom25pct", "never", cohort)
 
     df = pd.DataFrame({
         "account_id": [f"D{i:06d}" for i in range(n)],
-        "region_id": region_id,
+        "value_tier": value_tier.astype(str),
+        "account_value": acct_value.round(2),
         "cohort": cohort,
         "event_month": event_month,
         "adoption_month": np.where(adoption_month == 999, np.nan, adoption_month),
@@ -223,6 +381,104 @@ def generate_did_dataset(n=12_000):
         "tenure_months": tenure_months.round(1),
         "product_count": product_count,
         "churned_within_window": churned_within_window,
+        "true_effect_prob": true_effect_prob.round(6),
+    })
+    return df
+
+
+# ---------------------------------------------------------------------------
+# 4) Dormant-reengagement dataset: NO design-based structure available here
+#    (no threshold, no staggered rollout) -- built specifically to motivate
+#    and validate 07_doubleml_dormant.py.
+# ---------------------------------------------------------------------------
+# STORY: an ops team informally flags accounts for a re-engagement phone call
+# using a rule that's genuinely NON-SMOOTH -- something closer to "if
+# dormancy_streak is 3+ months regardless of engagement, OR dormancy_streak
+# is 1-2 months AND engagement is quite low, flag it" than to any single
+# smooth formula. That's deliberately written as a couple of IF/OR branches
+# because that's how real ops/eligibility rules usually actually look (a
+# handful of thresholds someone encoded from experience), and it's a
+# textbook case of something a LINEAR-additive logistic regression on the
+# raw features can't represent well (linear-in-X models can't produce this
+# kind of "AND"/"OR" branching decision boundary), but that a tree-based
+# model like XGBoost represents natively -- trees split on thresholds, which
+# is exactly this rule's shape.
+#
+# Crucially, the SAME underlying signal ALSO independently drives the bad
+# outcome (further disengagement / churn) -- accounts that would be flagged
+# for outreach are, on their own, already more likely to end up with a bad
+# outcome regardless of whether anyone calls them. This is "confounding by
+# indication" -- a term borrowed from epidemiology/health economics, where
+# the people most likely to be treated are also the people most likely to
+# have a bad outcome anyway, so a naive treated-vs-untreated comparison makes
+# the treatment look neutral or even harmful even when it truly helps. It's a
+# standard, intuitive way to explain why this specific play needs adjustment
+# for confounding rather than a simple average comparison.
+def generate_dormant_dataset(n=12_000):
+    engagement_score = rng.normal(45, 20, size=n).clip(0, 100)   # this population skews
+    dormancy_streak_months = rng.poisson(1.6, size=n).clip(0, 5)  # more disengaged than the
+    # general book -- these are accounts that already tripped some low-activity screen,
+    # not a random sample of all accounts.
+    product_count = rng.choice([1, 2, 3, 4, 5, 6], size=n,
+                                p=[0.28, 0.27, 0.20, 0.14, 0.08, 0.03])
+    tenure_months = rng.gamma(shape=2.2, scale=28, size=n).clip(1, 300)
+    balance = np.exp(rng.normal(8.0, 1.1, size=n))
+
+    # The confounding "risk flag": a couple of threshold branches, not one
+    # smooth formula -- see the note above on why this shape specifically
+    # motivates a tree-based (not linear) nuisance model.
+    flagged = (
+        (dormancy_streak_months >= 3)
+        | ((dormancy_streak_months >= 1) & (dormancy_streak_months <= 2) & (engagement_score < 25))
+    ).astype(int)
+
+    # Treatment assignment (ops team's informal outreach rule) -- driven by
+    # the SAME flag that also drives the outcome below, plus noise, so it's
+    # NOT a deterministic rule (real ops processes are noisy: capacity,
+    # analyst judgment, timing all add randomness on top of the rule).
+    # Coefficients tuned so propensities stay away from the 0/1 extremes
+    # (max ~0.95) -- a real positivity check, not just "whatever falls out".
+    # Wildly confident propensities (accounts ~100% certain to be contacted)
+    # create instability for ANY observational method, DoubleML included --
+    # worth designing around rather than discovering by accident.
+    treat_logit = -1.6 + 2.3 * flagged - 0.08 * product_count + rng.normal(0, 0.6, n)
+    reengagement_contact = rng.binomial(1, sigmoid(treat_logit))
+
+    # Outcome: 1 = bad outcome (churned or still dormant at the end of the
+    # follow-up window), 0 = good outcome (reactivated / retained). Kept on
+    # the same "1 = bad" sign convention as the RDD/DiD outcomes so effect
+    # signs are comparable across the whole project (all three true effects
+    # are negative -- each intervention REDUCES the bad-outcome probability).
+    baseline_logit = (-0.6 + 2.0 * flagged - 0.04 * product_count
+                       - 0.004 * tenure_months + rng.normal(0, 0.35, n))
+    final_logit = baseline_logit + reengagement_contact * TRUTH["dormant_true_effect_logit"]
+    bad_outcome = rng.binomial(1, sigmoid(final_logit))
+
+    # Row-level true individual treatment effect on the probability scale --
+    # "if this specific account HAD been contacted vs. hadn't", holding its
+    # own characteristics fixed. 07_doubleml_dormant.py averages this over
+    # just the TREATED rows to get the true ATT (average effect on the
+    # treated) -- deliberately ATT rather than population-wide ATE, because
+    # "how much did contacting the accounts we actually contacted help" is
+    # both the more natural business question here (most never-flagged
+    # accounts would never realistically be called anyway) and, with an
+    # effect this concentrated in a ~30% subgroup, a materially easier
+    # target to estimate precisely than an average smeared across a huge
+    # majority with a true effect close to zero. DoubleML is run with
+    # score="ATTE" to match. Same validation-only logic as did_data.csv's
+    # true_effect_prob column: only computable here because we control the DGP.
+    true_effect_prob = sigmoid(final_logit) - sigmoid(baseline_logit)
+
+    df = pd.DataFrame({
+        "account_id": [f"M{i:06d}" for i in range(n)],
+        "engagement_score": engagement_score.round(1),
+        "dormancy_streak_months": dormancy_streak_months,
+        "product_count": product_count,
+        "tenure_months": tenure_months.round(1),
+        "balance": balance.round(2),
+        "reengagement_contact": reengagement_contact,
+        "bad_outcome": bad_outcome,
+        "true_effect_prob": true_effect_prob.round(6),
     })
     return df
 
@@ -231,14 +487,18 @@ if __name__ == "__main__":
     pred_df = generate_predictive_dataset()
     rdd_df = generate_rdd_dataset()
     did_df = generate_did_dataset()
+    dormant_df = generate_dormant_dataset()
 
     pred_df.to_csv(os.path.join(OUT_DIR, "predictive_data.csv"), index=False)
     rdd_df.to_csv(os.path.join(OUT_DIR, "rdd_data.csv"), index=False)
     did_df.to_csv(os.path.join(OUT_DIR, "did_data.csv"), index=False)
+    dormant_df.to_csv(os.path.join(OUT_DIR, "dormant_data.csv"), index=False)
 
     print("=== predictive_data.csv ===")
     print(pred_df["churn_mode"].value_counts(normalize=True).round(4))
-    print(f"n = {len(pred_df)}\n")
+    print(f"n = {len(pred_df)}")
+    print(f"account_value (=value_score) range: ${pred_df['value_score'].min():,.0f} - "
+          f"${pred_df['value_score'].max():,.0f}, median ${pred_df['value_score'].median():,.0f}\n")
 
     print("=== rdd_data.csv ===")
     print(f"n = {len(rdd_df)}, treated share = {rdd_df['treated_rm_contact'].mean():.3f}")
@@ -249,7 +509,23 @@ if __name__ == "__main__":
 
     print("=== did_data.csv ===")
     print(did_df.groupby("cohort")["offer_live"].mean())
-    print(f"n = {len(did_df)}\n")
+    print(f"n = {len(did_df)}")
+    naive_did_diff = (did_df.loc[did_df.offer_live == 1, "churned_within_window"].mean()
+                       - did_df.loc[did_df.offer_live == 0, "churned_within_window"].mean())
+    print(f"NAIVE (biased) offer_live vs. not diff in churn: {naive_did_diff:+.4f}")
+    print("(the true effect is negative -- if this naive number looks smaller/positive,")
+    print(" that's the value-tier confound at work: high-value accounts got the offer")
+    print(" FIRST and were already less likely to churn regardless)\n")
+
+    print("=== dormant_data.csv ===")
+    print(f"n = {len(dormant_df)}, treated share = {dormant_df['reengagement_contact'].mean():.3f}")
+    naive_dormant_diff = (dormant_df.loc[dormant_df.reengagement_contact == 1, "bad_outcome"].mean()
+                           - dormant_df.loc[dormant_df.reengagement_contact == 0, "bad_outcome"].mean())
+    print(f"NAIVE (confounded) treated-vs-untreated diff in bad_outcome: {naive_dormant_diff:+.4f}")
+    print("(expect this to look near-zero or even POSITIVE -- 'confounding by indication':")
+    print(" the ops team calls the accounts already most likely to have a bad outcome,")
+    print(" so raw comparison makes outreach look useless or harmful even though the true")
+    print(f" injected effect is {TRUTH['dormant_true_effect_logit']:+.2f} logit, i.e. genuinely helpful)\n")
 
     print("Ground truth written to data/ground_truth.json:")
     print(json.dumps(TRUTH, indent=2))

@@ -4,17 +4,23 @@
 Replaces the real project's informal "intervene on the top 50% by value_score"
 cutoff with a formal budget-constrained assignment: given each account's
 predicted churn-mode probabilities (03_predictive_model.py) and the CAUSAL
-effect sizes recovered for two of the three interventions (RDD -> RM contact,
-DiD -> $100 DD offer), choose which accounts get which intervention to
-maximize total expected dollars of deposits protected, subject to:
+effect sizes recovered for all three interventions (RDD -> RM contact,
+DiD -> $100 DD offer, DoubleML -> dormant re-engagement), choose which
+accounts get which intervention to maximize total expected dollars of
+deposits protected, subject to:
   - a total retention budget
   - a cap on RM contacts (the scarcest resource -- RM time, not money)
   - at most one intervention per account
 
-The dormant/re-engagement play does NOT have a rigorous causal estimate
-behind it in this project (no RDD/DiD design covers it) -- that's flagged
-explicitly rather than quietly assumed, exactly the kind of gap the real
-project's Q7 answer already owns up to.
+Every effect size that feeds this optimization is labeled with WHERE it came
+from and how much to trust it (see CONFIDENCE below) -- RDD and DiD are
+design-based (their identifying assumptions were checked in
+02_validate_design.py), the dormant effect is DoubleML/selection-on-
+observables (07_doubleml_dormant.py), which is real evidence but resting on
+an assumption (unconfoundedness) that can't be tested the way RDD/DiD's can.
+Mixing confidence tiers into one optimization without labeling them would be
+the same mistake the value_score redesign fixed elsewhere in this project:
+silently treating different kinds of numbers as if they were interchangeable.
 """
 
 import json
@@ -34,23 +40,41 @@ OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
 # Load predicted risk + causal effect sizes from earlier stages
 # ---------------------------------------------------------------------------
 scores = pd.read_csv(os.path.join(OUT_DIR, "predictive_scores.csv"))
-pred_full = pd.read_csv(os.path.join(DATA_DIR, "predictive_data.csv"))
-scores = scores.merge(pred_full[["account_id", "balance", "product_count"]], on="account_id", how="left")
+# NOTE: "value_score" arrives already attached, straight from
+# predictive_data.csv via 03_predictive_model.py -- it's the SAME
+# account_value() dollar formula defined once in 01_generate_data.py
+# (balance * (1 + 0.15*product_count)), not a separately-maintained number.
+# One formula, computed once, used everywhere "what is this account worth"
+# is needed -- see 01_generate_data.py's module docstring for why that
+# unification matters.
 
 with open(os.path.join(OUT_DIR, "rdd_summary.json")) as f:
     rdd = json.load(f)
 with open(os.path.join(OUT_DIR, "did_summary.json")) as f:
     did = json.load(f)
+with open(os.path.join(OUT_DIR, "doubleml_summary.json")) as f:
+    dml = json.load(f)
 
 EFFECT_PP = {
     "large_withdrawal": abs(rdd["rdd_robust_coef"]),          # ~0.107, RDD-validated
-    "dd_stop": abs(did["cs_style_overall_att"]),               # ~0.077, DiD-validated
-    "dormant": 0.03,                                            # ASSUMPTION -- not causally validated here
+    "dd_stop": abs(did["clean_control_overall_att"]),          # ~0.037, clean-control DiD-validated
+    "dormant": abs(dml["doubleml_att"]),                       # ~0.066, DoubleML-validated (weaker design)
 }
 EFFECT_SOURCE = {
     "large_withdrawal": "RDD (rdrobust, robust CI)",
-    "dd_stop": "Callaway-Sant'Anna-style DiD",
-    "dormant": "ASSUMED (no RDD/DiD design covers this play -- flag for a future A/B test)",
+    "dd_stop": "clean-control (stacked) DiD",
+    "dormant": "DoubleML (IRM, selection-on-observables)",
+}
+# Confidence tier is tracked SEPARATELY from the point estimate -- both get
+# used in the optimization objective (a point estimate has to be used to
+# compute a number either way), but the tier is what 08_business_impact.py
+# leans on when deciding which results to recommend acting on immediately
+# vs. piloting further before scaling.
+CONFIDENCE = {
+    "large_withdrawal": "high -- design-based (RDD), no-manipulation assumption checked",
+    "dd_stop": "high -- design-based (DiD), parallel pre-trends checked",
+    "dormant": "moderate -- selection-on-observables (DoubleML); unconfoundedness "
+               "assumption is NOT directly testable from the data, unlike the other two",
 }
 COST = {"large_withdrawal": 75, "dd_stop": 100, "dormant": 10}
 INTERVENTIONS = list(EFFECT_PP.keys())
@@ -61,14 +85,17 @@ RM_CAPACITY = 400         # max large-withdrawal RM contacts the team can actual
 print("=== Inputs to the optimization ===")
 for k in INTERVENTIONS:
     print(f"{k:>18s}: effect={EFFECT_PP[k]*100:5.2f}pp  cost=${COST[k]:>4d}  source: {EFFECT_SOURCE[k]}")
+    print(f"{'':>18s}  confidence: {CONFIDENCE[k]}")
 print(f"Budget=${BUDGET:,}   RM capacity={RM_CAPACITY} contacts\n")
 
 # ---------------------------------------------------------------------------
-# Dollar value at stake per account: deposit balance, scaled up for product
-# depth (consistent with the real project's value_score logic -- product
-# depth was its single biggest driver of customer value)
+# Dollar value at stake per account: the same account_value() dollar formula
+# used everywhere else in the project (see note above) -- aliased here as
+# "dollar_value_at_risk" purely for local readability in this file (this is
+# what's actually at risk of being lost if the account churns), not because
+# it's a different number.
 # ---------------------------------------------------------------------------
-scores["dollar_value_at_risk"] = scores["balance"] * (1 + 0.15 * scores["product_count"])
+scores["dollar_value_at_risk"] = scores["value_score"]
 
 # expected value protected, per account, per candidate intervention:
 # P(that churn mode) * effect_size(pp) * dollar_value_at_risk
@@ -206,6 +233,11 @@ summary = {
     "optimized": {"n": int(len(selected)), "spend": float(opt_spend), "rm_used": int(opt_rm),
                   "ev": float(opt_value), "net": float(opt_net)},
     "heuristic_capped": {"n": int(len(capped)), "spend": float(capped_spend), "net": float(capped_net)},
+    "effect_inputs": {
+        k: {"effect_pp": EFFECT_PP[k], "cost": COST[k], "source": EFFECT_SOURCE[k],
+            "confidence": CONFIDENCE[k]}
+        for k in INTERVENTIONS
+    },
 }
 with open(os.path.join(OUT_DIR, "optimization_summary.json"), "w") as f:
     json.dump(summary, f, indent=2)
