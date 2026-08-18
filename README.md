@@ -1,9 +1,7 @@
 # DDA Retention Decision Engine — Vanguard Interview Demo
 
 A technical rebuild of a real DDA (checking account) retention project, adding
-the quasi-experimental causal inference and formal optimization emphasized by
-the Vanguard Data Scientist (Decision Analytics) JD. Built for a 20-minute
-technical presentation, not a production system.
+the quasi-experimental causal inference and formal optimization. 
 
 **Important:** all data here is synthetic, generated with a known
 ground-truth causal effect baked in, specifically so the RDD and DiD
