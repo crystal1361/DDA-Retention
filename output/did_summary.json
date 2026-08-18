@@ -1,6 +1,6 @@
 {
-  "naive_twfe_coef": -0.08458336896719465,
-  "naive_twfe_p": 1.470226075126579e-10,
-  "cs_style_overall_att": -0.0772508315203269,
-  "true_effect_prob_scale": -0.06354675402083347
+  "naive_twfe_coef": -0.034948136926376154,
+  "naive_twfe_p": 0.0008325988730407758,
+  "clean_control_overall_att": -0.03686621453538054,
+  "true_effect_prob_scale": -0.04668352172753932
 }
