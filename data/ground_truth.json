@@ -1,0 +1,18 @@
+{
+  "rdd_cutoff": 30.0,
+  "rdd_true_effect_logit": -0.9,
+  "did_adoption_months": {
+    "R00": 8,
+    "R01": 8,
+    "R02": 8,
+    "R03": 14,
+    "R04": 14,
+    "R05": 14,
+    "R06": 20,
+    "R07": 20,
+    "R08": null,
+    "R09": null
+  },
+  "did_true_effect_logit_max": -0.9,
+  "did_ramp_months": 3
+}
