@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+node_modules/
+deck/*.pdf
+deck/slide-*.jpg
+output/page-*.jpg
+output/*.pdf
+.DS_Store
