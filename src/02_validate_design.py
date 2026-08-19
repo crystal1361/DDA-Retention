@@ -33,10 +33,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
-os.makedirs(FIG_DIR, exist_ok=True)
+from config import DATA_DIR, FIG_DIR, RDD_CUTOFF
+from logging_setup import get_logger
 
+logger = get_logger(__name__)
+
+# Deliberately a DIFFERENT, local seed (7) rather than config.SEED (42) --
+# this seeds only the McCrary bootstrap's resampling, a validation-only
+# procedure that never touches the synthetic data itself, so there's no
+# reproducibility reason it needs to share the pipeline's main seed. Kept
+# local and explicit rather than moved into config.py for that reason: it's
+# not a pipeline-wide constant, it's this one check's own randomness.
 rng = np.random.default_rng(7)
 
 # ---------------------------------------------------------------------------
@@ -91,7 +98,7 @@ def mccrary_style_test(x, cutoff, bin_width=2.0, bandwidth=20.0, n_boot=400):
 
 def run_rdd_validation():
     rdd_df = pd.read_csv(os.path.join(DATA_DIR, "rdd_data.csv"))
-    cutoff = 30.0
+    cutoff = RDD_CUTOFF
     result = mccrary_style_test(rdd_df["withdrawal_pct"].values, cutoff)
 
     print("=== RDD manipulation check (McCrary-style density test) ===")
@@ -166,6 +173,9 @@ def run_did_pretrends_check():
 
 
 if __name__ == "__main__":
+    logger.info("02_validate_design: starting design validation checks")
     rdd_result = run_rdd_validation()
     did_result = run_did_pretrends_check()
     print("Figures saved to figures/rdd_density_check.png and figures/did_pretrends_check.png")
+    logger.info("02_validate_design: McCrary p=%.3f, pre-trends F-test p=%.3f",
+                rdd_result["p_value"], did_result["p_value"])

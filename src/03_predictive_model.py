@@ -24,11 +24,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
-os.makedirs(FIG_DIR, exist_ok=True)
-os.makedirs(OUT_DIR, exist_ok=True)
+from config import DATA_DIR, FIG_DIR, OUT_DIR, SEED, TEST_SIZE, PREDICTIVE_MODEL_PARAMS
+from validation import validate_predictive_data
+from logging_setup import get_logger
+
+logger = get_logger(__name__)
 
 CLASSES = ["none", "large_withdrawal", "dd_stop", "dormant"]
 FEATURES = ["tenure_months", "product_count", "balance", "balance_tier",
@@ -37,14 +37,21 @@ FEATURES = ["tenure_months", "product_count", "balance", "balance_tier",
 
 
 def main():
+    logger.info("03_predictive_model: starting (SEED=%s)", SEED)
     df = pd.read_csv(os.path.join(DATA_DIR, "predictive_data.csv"))
+    try:
+        validate_predictive_data(df)
+    except Exception:
+        logger.exception("03_predictive_model: input validation failed")
+        raise
+
     df["region_id"] = df["region_id"].astype("category")
     region_dummies = pd.get_dummies(df["region_id"], prefix="region")
     X = pd.concat([df[FEATURES], region_dummies], axis=1)
     y = df["churn_mode"].map({c: i for i, c in enumerate(CLASSES)})
 
     X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
-        X, y, df.index, test_size=0.25, random_state=42, stratify=y
+        X, y, df.index, test_size=TEST_SIZE, random_state=SEED, stratify=y
     )
 
     # NOTE on evaluation approach: churn_mode is heavily imbalanced (~89% "none").
@@ -57,12 +64,7 @@ def main():
     # here is ranking quality (ROC-AUC, PR-AUC, lift at top decile) per class,
     # with the hard confusion matrix shown only as a secondary, illustrative
     # view.
-    model = XGBClassifier(
-        objective="multi:softprob", num_class=len(CLASSES),
-        n_estimators=300, max_depth=4, learning_rate=0.05,
-        subsample=0.8, colsample_bytree=0.8,
-        eval_metric="mlogloss", random_state=42,
-    )
+    model = XGBClassifier(num_class=len(CLASSES), **PREDICTIVE_MODEL_PARAMS)
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
@@ -126,6 +128,7 @@ def main():
 
     print(f"\nSaved: figures/confusion_matrix.png, figures/feature_importance.png, "
           f"output/predictive_scores.csv ({len(scores_df)} test-set accounts)")
+    logger.info("03_predictive_model: done, wrote predictive_scores.csv (%d rows)", len(scores_df))
 
 
 if __name__ == "__main__":

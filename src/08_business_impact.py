@@ -33,11 +33,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+from config import (DATA_DIR, FIG_DIR, OUT_DIR, SCORED_ACCOUNTS,
+                     VALUE_UPLIFT_SENSITIVITY_RATES, PRODUCT_VALUE_UPLIFT)
+from logging_setup import get_logger
 
-SCORED_ACCOUNTS = 10_000  # size of the predictive test set this optimization ran over
+logger = get_logger(__name__)
 
 
 def load_json(name):
@@ -83,21 +83,21 @@ def headline_impact():
 # ---------------------------------------------------------------------------
 def value_uplift_sensitivity():
     pred = pd.read_csv(os.path.join(DATA_DIR, "predictive_data.csv"))
-    rates = [0.10, 0.15, 0.20]
+    rates = VALUE_UPLIFT_SENSITIVITY_RATES
     rank_frames = {}
     for r in rates:
         v = pred["balance"] * (1 + r * pred["product_count"])
         rank_frames[r] = v.rank(pct=True)
 
-    base = rank_frames[0.15]
+    base = rank_frames[PRODUCT_VALUE_UPLIFT]
     print("=== Sensitivity: does the 15% product-value-uplift assumption drive the ranking? ===")
     correlations = {}
     for r in rates:
-        if r == 0.15:
+        if r == PRODUCT_VALUE_UPLIFT:
             continue
         corr = base.corr(rank_frames[r], method="spearman")
         correlations[r] = corr
-        print(f"Spearman rank correlation, value ranking at {r:.0%} vs. 15%: {corr:.4f}")
+        print(f"Spearman rank correlation, value ranking at {r:.0%} vs. {PRODUCT_VALUE_UPLIFT:.0%}: {corr:.4f}")
 
     # A more concrete, decision-relevant check: of the accounts that land in
     # the TOP QUARTILE by value under the 15% assumption (i.e. the accounts
@@ -106,16 +106,16 @@ def value_uplift_sensitivity():
     # different call" than a correlation coefficient is.
     top_quartile_base = set(pred.loc[base >= 0.75, "account_id"])
     print(f"\nTop-value-quartile membership overlap (the accounts that actually get")
-    print(f"prioritized) vs. the 15% baseline:")
+    print(f"prioritized) vs. the {PRODUCT_VALUE_UPLIFT:.0%} baseline:")
     overlaps = {}
     for r in rates:
-        if r == 0.15:
+        if r == PRODUCT_VALUE_UPLIFT:
             continue
         top_r = set(pred.loc[rank_frames[r] >= 0.75, "account_id"])
         overlap_pct = len(top_quartile_base & top_r) / len(top_quartile_base) * 100
         overlaps[r] = overlap_pct
         print(f"  at {r:.0%}: {overlap_pct:.1f}% of the same accounts stay in the top quartile")
-    print("\n-> The specific 15% figure changes who's on the margin, but not the")
+    print("\n-> The specific baseline figure changes who's on the margin, but not the")
     print("   overall prioritization -- which is the actual claim worth making if")
     print("   asked to defend that number: it isn't load-bearing for the conclusion.\n")
     return {"spearman_by_rate": correlations, "top_quartile_overlap_pct_by_rate": overlaps}
@@ -127,7 +127,16 @@ def value_uplift_sensitivity():
 #    business" deliverable a Decision Analytics stakeholder wants, written
 #    to stand on its own outside the slide deck.
 # ---------------------------------------------------------------------------
-def build_recommendations():
+def build_recommendations(headline):
+    """headline is the dict returned by headline_impact() -- passed in
+    explicitly (rather than read off a module-level global set elsewhere)
+    so this function can be called, tested, or imported on its own without
+    depending on execution order. This used to read a bare
+    `headline_impact_cache` name that only existed because __main__ happened
+    to define it before calling this function -- fine for a script always
+    run top-to-bottom, but exactly the kind of implicit ordering dependency
+    that breaks the moment anything imports this module instead of running
+    it as __main__ (e.g. a unit test, or src/service.py)."""
     opt = load_json("optimization_summary.json")
     effect_inputs = opt["effect_inputs"]
 
@@ -137,7 +146,7 @@ def build_recommendations():
             "action": "Replace the informal 'top 50% by value_score' retention "
                       "targeting rule with the budget-constrained ILP optimizer.",
             "why": f"At equal budget and RM capacity, the optimizer protects "
-                   f"{headline_impact_cache['uplift_pct']:.0f}% more net expected "
+                   f"{headline['uplift_pct']:.0f}% more net expected "
                    f"value than the current heuristic -- same spend, better targeting.",
             "confidence": "High -- this is a mechanical improvement (better use of "
                           "already-validated effect sizes and existing constraints), "
@@ -193,9 +202,10 @@ def build_recommendations():
 
 
 if __name__ == "__main__":
+    logger.info("08_business_impact: starting")
     headline_impact_cache = headline_impact()
     sensitivity = value_uplift_sensitivity()
-    recommendations = build_recommendations()
+    recommendations = build_recommendations(headline_impact_cache)
 
     print("=== Actionable recommendations (priority order) ===")
     for r in recommendations:
@@ -227,3 +237,5 @@ if __name__ == "__main__":
     with open(os.path.join(OUT_DIR, "business_impact_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print("\nSaved figures/business_impact_headline.png, output/business_impact_summary.json")
+    logger.info("08_business_impact: done, uplift=$%.0f (+%.1f%%)",
+                headline_impact_cache["uplift_dollars"], headline_impact_cache["uplift_pct"])

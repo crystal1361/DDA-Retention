@@ -49,9 +49,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+from config import DATA_DIR, FIG_DIR, OUT_DIR
+from validation import validate_did_data
+from logging_setup import get_logger
+
+logger = get_logger(__name__)
 
 
 def sigmoid(x):
@@ -178,7 +180,13 @@ def grade_against_ground_truth(df, naive_result, overall_att):
 
 
 if __name__ == "__main__":
+    logger.info("05_did_analysis: starting")
     df = pd.read_csv(os.path.join(DATA_DIR, "did_data.csv"))
+    try:
+        validate_did_data(df, tier_col="value_tier")
+    except Exception:
+        logger.exception("05_did_analysis: input validation failed")
+        raise
 
     naive_result = naive_twfe(df)
     cc_df, overall_att = clean_control_did(df)
@@ -195,3 +203,5 @@ if __name__ == "__main__":
     with open(os.path.join(OUT_DIR, "did_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(f"\nSaved figures/did_event_study.png, output/did_cohort_att.csv, output/did_summary.json")
+    logger.info("05_did_analysis: done, naive TWFE=%+.4f, clean-control ATT=%+.4f, true=%+.4f",
+                naive_result["coef"], overall_att, true_effect)

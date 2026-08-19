@@ -86,32 +86,32 @@ import pandas as pd
 import json
 import os
 
-SEED = 42
-rng = np.random.default_rng(SEED)
+from config import SEED, PRODUCT_VALUE_UPLIFT, account_value, seed_everything, DATA_DIR
+from validation import (
+    validate_predictive_data, validate_rdd_data, validate_did_data,
+    validate_dormant_data,
+)
+from logging_setup import get_logger
 
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-os.makedirs(OUT_DIR, exist_ok=True)
+logger = get_logger(__name__)
 
-# Assumed incremental value per product held, used to turn raw balance into
-# an account_value estimate (see the module docstring above for why this
-# formula looks the way it does). Kept as a named constant -- not a magic
-# number buried in a formula -- specifically so it's easy to point to in an
-# interview and easy to sensitivity-test in 08_business_impact.py.
-PRODUCT_VALUE_UPLIFT = 0.15
+# seed_everything() sets BOTH numpy RNG systems this pipeline touches (see
+# config.py's docstring) and returns the modern Generator this script's own
+# draws use. Functionally identical to the old `np.random.default_rng(SEED)`
+# call for THIS script's own draws -- the added `np.random.seed(SEED)` call
+# seeds a separate (legacy, global) RNG stream that this script doesn't
+# itself draw from, so the sequence of values `rng` produces below, and
+# therefore every synthetic number in this project, is UNCHANGED by this
+# refactor. It matters starting with 03/07, which do draw from that legacy
+# stream via scikit-learn/DoubleML.
+rng = seed_everything(SEED)
 
+OUT_DIR = DATA_DIR
 
-def account_value(balance, product_count):
-    """Dollar-denominated proxy for 'what is this account worth'.
-
-    Deliberately built from only two inputs that are directly economic
-    (deposit balance -> NII revenue; product depth -> cross-sell revenue),
-    combined multiplicatively so both terms stay in dollar units throughout.
-    Used consistently everywhere "value" is needed: the predictive dataset,
-    the DiD rollout-priority ordering, and the optimization objective --
-    one formula, one place it's defined, no risk of the three layers of the
-    project quietly disagreeing about what a customer is worth.
-    """
-    return balance * (1 + PRODUCT_VALUE_UPLIFT * product_count)
+# PRODUCT_VALUE_UPLIFT and account_value() now live in config.py (see its
+# docstring for why) -- imported above rather than redefined here, so this
+# script, the predictive dataset, the DiD tiering, and the optimizer are
+# all guaranteed to use the exact same formula.
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +224,15 @@ def generate_rdd_dataset(n=15_000):
     # to dodge/trigger an RM call."
     withdrawal_pct = rng.normal(30, 18, size=n)
     withdrawal_pct = withdrawal_pct.clip(0, 95)
+    # Round BEFORE deriving treatment, not after: rounding withdrawal_pct to
+    # 2dp for storage but computing `treated` from the unrounded value could
+    # produce a handful of boundary rows (e.g. raw 29.996 -> treated=0, but
+    # stored as 30.00) where the SAVED running variable and the SAVED
+    # treatment flag silently disagree about which side of the cutoff a row
+    # is on. That's not a sharp RDD anymore for those rows -- validate_rdd_
+    # data() below is what originally caught this. Rounding first means the
+    # persisted running variable IS the value treatment was assigned from.
+    withdrawal_pct = withdrawal_pct.round(2)
 
     tenure_months = rng.gamma(shape=2.2, scale=28, size=n).clip(1, 300)
     product_count = rng.choice([1, 2, 3, 4, 5, 6], size=n,
@@ -246,7 +255,7 @@ def generate_rdd_dataset(n=15_000):
 
     df = pd.DataFrame({
         "account_id": [f"W{i:06d}" for i in range(n)],
-        "withdrawal_pct": withdrawal_pct.round(2),
+        "withdrawal_pct": withdrawal_pct,
         "treated_rm_contact": treated,
         "tenure_months": tenure_months.round(1),
         "product_count": product_count,
@@ -484,10 +493,31 @@ def generate_dormant_dataset(n=12_000):
 
 
 if __name__ == "__main__":
+    logger.info("01_generate_data: starting synthetic data generation (SEED=%s)", SEED)
+
     pred_df = generate_predictive_dataset()
     rdd_df = generate_rdd_dataset()
     did_df = generate_did_dataset()
     dormant_df = generate_dormant_dataset()
+
+    # Validate before writing to disk -- "fail loud, fail at the boundary
+    # where bad data would otherwise silently enter the rest of the
+    # pipeline" (see validation.py's docstring). In particular,
+    # validate_rdd_data re-derives the sharp assignment rule from
+    # withdrawal_pct and checks it against treated_rm_contact exactly --
+    # if the DGP above is ever edited in a way that breaks the sharp
+    # design, this is where it gets caught, not three scripts later in a
+    # confusing rdrobust error.
+    try:
+        validate_predictive_data(pred_df)
+        validate_rdd_data(rdd_df, cutoff=TRUTH["rdd_cutoff"],
+                           running_var="withdrawal_pct", treatment_col="treated_rm_contact")
+        validate_did_data(did_df, tier_col="value_tier")
+        validate_dormant_data(dormant_df, treatment_col="reengagement_contact")
+    except Exception:
+        logger.exception("01_generate_data: validation failed before write")
+        raise
+    logger.info("01_generate_data: all four datasets passed validation")
 
     pred_df.to_csv(os.path.join(OUT_DIR, "predictive_data.csv"), index=False)
     rdd_df.to_csv(os.path.join(OUT_DIR, "rdd_data.csv"), index=False)
@@ -529,3 +559,6 @@ if __name__ == "__main__":
 
     print("Ground truth written to data/ground_truth.json:")
     print(json.dumps(TRUTH, indent=2))
+
+    logger.info("01_generate_data: done -- wrote predictive(%d)/rdd(%d)/did(%d)/dormant(%d) rows",
+                len(pred_df), len(rdd_df), len(did_df), len(dormant_df))

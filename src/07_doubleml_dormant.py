@@ -73,16 +73,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+from config import (DATA_DIR, FIG_DIR, OUT_DIR, SEED, DOUBLEML_XGB_PARAMS,
+                     DOUBLEML_N_FOLDS, DOUBLEML_N_REP, seed_everything)
+from validation import validate_dormant_data
+from logging_setup import get_logger
+
+logger = get_logger(__name__)
 
 COVARIATES = ["engagement_score", "dormancy_streak_months", "product_count",
               "tenure_months", "balance"]
 TREATMENT = "reengagement_contact"
 OUTCOME = "bad_outcome"
-
-SEED = 42
 
 
 # ---------------------------------------------------------------------------
@@ -157,14 +158,11 @@ def doubleml_irm(df):
     # colsample add a bit of extra randomness per tree -- standard moves to
     # keep a boosted-tree nuisance model from overfitting on a modest
     # (n=10,000) sample.
-    xgb_kwargs = dict(n_estimators=120, max_depth=2, learning_rate=0.05,
-                       reg_lambda=2.0, subsample=0.8, colsample_bytree=0.8,
-                       eval_metric="logloss", random_state=SEED)
-    ml_g = XGBClassifier(**xgb_kwargs)
-    ml_m = XGBClassifier(**xgb_kwargs)
+    ml_g = XGBClassifier(**DOUBLEML_XGB_PARAMS)
+    ml_m = XGBClassifier(**DOUBLEML_XGB_PARAMS)
 
     dml_irm = DoubleMLIRM(dml_data, ml_g=ml_g, ml_m=ml_m,
-                           n_folds=5, n_rep=5, score="ATTE")
+                           n_folds=DOUBLEML_N_FOLDS, n_rep=DOUBLEML_N_REP, score="ATTE")
     # Cross-fitting happens inside .fit(): the data is split into 5 folds;
     # for each fold, the nuisance models (ml_g, ml_m) are trained on the
     # OTHER 4 folds and used to predict on the held-out fold. This is what
@@ -175,6 +173,15 @@ def doubleml_irm(df):
     # reduces the extra estimation noise that comes from any ONE random
     # split being a bit lucky or unlucky -- a standard DoubleML recommendation
     # when the sample size makes a single split noisy.
+    #
+    # REPRODUCIBILITY NOTE: the fold splits above are drawn from numpy's
+    # LEGACY global RandomState (via sklearn's KFold(shuffle=True) internally),
+    # not from the modern Generator API used elsewhere in this project. Every
+    # explicit random_state you can see in this file (in DOUBLEML_XGB_PARAMS)
+    # only pins the XGBoost nuisance models -- it does NOT pin which rows land
+    # in which cross-fitting fold. That stream is seeded once, in this
+    # script's __main__ block, via config.seed_everything(SEED) -- see that
+    # call for why it has to happen there and not here.
     dml_irm.fit()
 
     att = dml_irm.coef[0]
@@ -226,7 +233,21 @@ def diagnostic_figure(naive, logit_ame, dml_result, true_att, save_path):
 
 
 if __name__ == "__main__":
+    logger.info("07_doubleml_dormant: starting (SEED=%s)", SEED)
+    # Seed BOTH RNG systems before anything random happens in this script --
+    # in particular before DoubleMLIRM.fit() below, whose cross-fitting fold
+    # splits draw from the legacy global RandomState that seed_everything()
+    # sets (np.random.seed). This is the fix for the run-to-run drift this
+    # script used to show even with SEED "set" everywhere that XGBoost could
+    # see it -- the fold-splitting itself was never actually pinned down.
+    seed_everything(SEED)
+
     df = pd.read_csv(os.path.join(DATA_DIR, "dormant_data.csv"))
+    try:
+        validate_dormant_data(df, treatment_col=TREATMENT)
+    except Exception:
+        logger.exception("07_doubleml_dormant: input validation failed")
+        raise
 
     with open(os.path.join(DATA_DIR, "ground_truth.json")) as f:
         truth = json.load(f)
@@ -266,3 +287,5 @@ if __name__ == "__main__":
     with open(os.path.join(OUT_DIR, "doubleml_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print("\nSaved figures/doubleml_dormant.png, output/doubleml_summary.json")
+    logger.info("07_doubleml_dormant: done, DoubleML ATT=%+.4f [%+.4f, %+.4f], true=%+.4f",
+                dml_result["att"], dml_result["ci_low"], dml_result["ci_high"], true_att)

@@ -25,11 +25,13 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
+from config import DATA_DIR, FIG_DIR, OUT_DIR, RDD_CUTOFF
+from validation import validate_rdd_data
+from logging_setup import get_logger
 
-CUTOFF = 30.0
+logger = get_logger(__name__)
+
+CUTOFF = RDD_CUTOFF
 
 
 def sigmoid(x):
@@ -146,7 +148,14 @@ def grade_against_ground_truth(robust_result, df):
 
 
 if __name__ == "__main__":
+    logger.info("04_rdd_analysis: starting")
     df = pd.read_csv(os.path.join(DATA_DIR, "rdd_data.csv"))
+    try:
+        validate_rdd_data(df, cutoff=CUTOFF, running_var="withdrawal_pct",
+                           treatment_col="treated_rm_contact")
+    except Exception:
+        logger.exception("04_rdd_analysis: input validation failed")
+        raise
     naive_diff = naive_comparison(df)
     conventional, robust, res = rdd_estimate(df)
     bw_df = bandwidth_sensitivity(df)
@@ -165,3 +174,5 @@ if __name__ == "__main__":
     with open(os.path.join(OUT_DIR, "rdd_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(f"\nSaved figures/rdd_effect_plot.png, output/rdd_summary.json, output/rdd_bandwidth_sensitivity.csv")
+    logger.info("04_rdd_analysis: done, robust coef=%+.4f [%+.4f, %+.4f] p=%.2e",
+                robust["coef"], robust["ci_low"], robust["ci_high"], robust["p"])
