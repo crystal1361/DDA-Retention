@@ -126,17 +126,62 @@ def rd_plot(df, save_path):
 
 
 def grade_against_ground_truth(robust_result, df):
+    """
+    Why this function exists: rdrobust reports its effect in PROBABILITY-scale
+    percentage points (e.g. -10.7pp). But the "true" effect we injected when
+    generating this synthetic data (01_generate_data.py) was defined on the
+    LOGIT scale (rdd_true_effect_logit = -0.9), because that's how a logistic
+    data-generating process naturally works -- effects get added on the log-odds
+    scale so the resulting probability can never fall outside [0, 1] no matter
+    how large the effect is. A raw probability can't do that: you can't just
+    subtract 0.9 from a probability, you could end up below 0 or above 1.
+    So before we can compare "-10.7pp" (RDD's answer) to "-0.9" (the true
+    answer), we have to translate -0.9 back into the same probability-scale
+    units, evaluated at the same location (right at the cutoff) that RDD is
+    itself estimating. That's what the four lines below do.
+    """
     with open(os.path.join(DATA_DIR, "ground_truth.json")) as f:
         truth = json.load(f)
 
-    # back-of-envelope: convert the true logit jump into an approximate
-    # probability-scale effect AT the cutoff, using the local baseline rate
-    # just below the cutoff as the reference point (delta-method style)
+    # Step 1: what's the actual observed churn rate just BELOW the cutoff
+    # (no RM contact yet)? This is our baseline/reference point, p0.
+    # We deliberately use a narrow window (cutoff-3 to cutoff) rather than the
+    # full dataset's average, because the logit effect translates into a
+    # different number of percentage points depending on where you start from
+    # (see step 4) -- we need the baseline AT the cutoff, not the global average.
     near_cutoff = df[(df.withdrawal_pct >= CUTOFF - 3) & (df.withdrawal_pct < CUTOFF)]
     p0 = near_cutoff["churn_next_month"].mean()
+    # example with real numbers from this dataset: p0 ~= 0.171 (17.1% churn
+    # rate among accounts withdrawing 27-30% of balance, just left of the cutoff)
+
+    # Step 2: convert that probability into "odds", then take the log of the
+    # odds to get the logit. odds = p/(1-p) = "how many non-churners for every
+    # churner" (odds=0.206 means roughly 1 churner per 4.85 non-churners).
+    # Unlike probability (stuck between 0 and 1), logit can be ANY real number,
+    # which is exactly why effects can be validly added to it in step 3.
     logit0 = np.log(p0 / (1 - p0))
+    # example: logit0 = ln(0.206) ~= -1.578
+
+    # Step 3: add the true injected effect on the logit scale (this mirrors
+    # exactly what 01_generate_data.py did when it built this dataset), then
+    # convert back from logit to probability with sigmoid (the inverse of the
+    # log-odds transform). This gives p1: what the churn rate at the cutoff
+    # WOULD be if the true effect were applied to our observed baseline p0.
     p1 = sigmoid(logit0 + truth["rdd_true_effect_logit"])
+    # example: logit1 = -1.578 + (-0.9) = -2.478  ->  p1 = sigmoid(-2.478) ~= 0.077
+
+    # Step 4: the true effect, now expressed in the same probability-scale
+    # percentage points that rdrobust reports, so it's directly comparable to
+    # robust_result['coef']. Note this number is LOCAL to p0 -- the same -0.9
+    # logit effect would translate into a different number of percentage
+    # points if the baseline churn rate near the cutoff were higher or lower
+    # (the sigmoid curve is steepest around p=0.5 and flattens out near the
+    # extremes, so a fixed logit shift moves probability more in the middle
+    # of the curve than near 0 or 1).
     true_effect_prob_scale = p1 - p0
+    # example: 0.077 - 0.171 ~= -0.094, i.e. about -9.4pp -- close to (within
+    # ~1.3pp of) the RDD robust estimate of -10.7pp, which is the whole point:
+    # it tells us the RDD method correctly recovered the effect we built in.
 
     print("\n=== Grading the estimator against injected ground truth ===")
     print(f"True effect (injected, logit scale)         : {truth['rdd_true_effect_logit']:+.3f}")
