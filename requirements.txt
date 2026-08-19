@@ -7,3 +7,6 @@ rdrobust
 pulp
 matplotlib
 doubleml
+pytest
+fastapi
+uvicorn

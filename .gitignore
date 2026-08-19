@@ -6,3 +6,5 @@ deck/slide-*.jpg
 output/page-*.jpg
 output/*.pdf
 .DS_Store
+.pytest_cache/
+logs/*.log
