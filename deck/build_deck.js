@@ -512,7 +512,7 @@ const pres = newPres();
 
   s.addImage({ path: FIG("business_impact_headline.png"), x: 0.6, y: 2.15, w: 6.1, h: 4.75 });
 
-  statCard(s, 7.05, 2.15, 5.65, 1.25, "+$117,079", "Incremental net value protected, per 10,000 scored accounts (+63.2%)");
+  statCard(s, 7.05, 2.15, 5.65, 1.25, "+$116,211", "Incremental net value protected, per 10,000 scored accounts (+63.2%)");
   s.addText("Deliberately NOT scaled to a fabricated \"total accounts at the bank\" number — this project's "
     + "data is a sized demo, not the real book. Reported per 10,000 scored accounts with an explicit scaling "
     + "instruction instead: multiply by (your real scored-account count / 10,000). The mechanism — same spend, "

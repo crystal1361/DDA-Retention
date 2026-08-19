@@ -21,6 +21,14 @@ function h2(text) {
 function label(text, color = TERRACOTTA) {
   return new Paragraph({
     spacing: { before: 160, after: 60 },
+    // keepLines: true stops Word/LibreOffice from inserting a page break
+    // in the MIDDLE of a wrapped heading line (which is what happened to
+    // the longer Q14 heading before this was added -- the paragraph's
+    // first wrapped line landed at the bottom of one page and its second
+    // wrapped line started the next, splitting a Chinese word across the
+    // page boundary). Harmless for every other (short, single-line) label
+    // in this doc since a one-line paragraph has nothing to keep together.
+    keepLines: true,
     children: [new TextRun({ text, bold: true, color, size: 21 })],
   });
 }
@@ -123,9 +131,9 @@ children.push(label("Action（中文）"));
 ].forEach(t => children.push(bullet(t)));
 
 children.push(label("Result（English）"));
-children.push(body("Real result stands: -30% relative churn from the actual A/B test. On top of that, the rebuild shows RDD recovering a -10.7pp effect (vs. a misleading -1.5pp naive comparison) within 1.3pp of the true simulated effect; the value-tier DiD's clean-control estimate at -3.7pp landing closer to the true -4.7pp than naive TWFE's -3.5pp; DoubleML correctly recovering the sign of the dormant effect (-6.5pp) where naive (+11.2pp) and logistic (+0.8pp) both got it backwards; and the optimization layer protecting 63% more net value than the heuristic at equal budget and RM capacity — worth +$117,079 per 10,000 scored accounts, translated into four prioritized, confidence-tiered recommendations for the business."));
+children.push(body("Real result stands: -30% relative churn from the actual A/B test. On top of that, the rebuild shows RDD recovering a -10.7pp effect (vs. a misleading -1.5pp naive comparison) within 1.3pp of the true simulated effect; the value-tier DiD's clean-control estimate at -3.7pp landing closer to the true -4.7pp than naive TWFE's -3.5pp; DoubleML correctly recovering the sign of the dormant effect (-6.5pp) where naive (+11.2pp) and logistic (+0.8pp) both got it backwards; and the optimization layer protecting 63% more net value than the heuristic at equal budget and RM capacity — worth +$116,211 per 10,000 scored accounts, translated into four prioritized, confidence-tiered recommendations for the business."));
 children.push(label("Result（中文）"));
-children.push(body("真实结果依然成立：真实A/B test测出-30%相对流失。在此基础上，重建版本显示RDD恢复出-10.7pp的效应（相比会误导人的-1.5pp naive对比），和模拟真实效应只差1.3pp；客户价值分层DiD的clean-control估计-3.7pp比naive TWFE的-3.5pp更接近真实的-4.7pp；DoubleML正确恢复了dormant效应的符号方向（-6.5pp），而naive（+11.2pp）和logistic（+0.8pp）方向都是反的；优化层在同样预算和RM产能下，比经验规则多保护63%的净价值——按每万个评分账户折算价值+$117,079，最终转化成四条按优先级和置信度分层的业务建议。"));
+children.push(body("真实结果依然成立：真实A/B test测出-30%相对流失。在此基础上，重建版本显示RDD恢复出-10.7pp的效应（相比会误导人的-1.5pp naive对比），和模拟真实效应只差1.3pp；客户价值分层DiD的clean-control估计-3.7pp比naive TWFE的-3.5pp更接近真实的-4.7pp；DoubleML正确恢复了dormant效应的符号方向（-6.5pp），而naive（+11.2pp）和logistic（+0.8pp）方向都是反的；优化层在同样预算和RM产能下，比经验规则多保护63%的净价值——按每万个评分账户折算价值+$116,211，最终转化成四条按优先级和置信度分层的业务建议。"));
 
 children.push(hr());
 
@@ -183,8 +191,8 @@ qaBlock(10, "How do you know DoubleML is actually working here, rather than just
 ).forEach(p => children.push(p));
 
 qaBlock(11, "Business impact: why report per-10,000-accounts instead of one big enterprise-wide dollar number? / 业务影响为什么按每万个账户折算，而不是给出一个全行的大数字？",
-  "Because I don't know the real book size, and inventing one to produce a bigger, more impressive-sounding total would be exactly the kind of overclaiming I've been careful to avoid everywhere else in this project. This project's data is a sized demo (a 10,000-account scored test set), not the institution's actual book. So I report the incremental value — +$117,079, +63.2% — per 10,000 scored accounts, with an explicit instruction: multiply by (your real scored-account count / 10,000) to get your actual number. The mechanism behind the gain is what matters and what I'd actually defend: same budget, same RM capacity, better targeting — and that mechanism scales linearly with book size, unlike a one-time fixed-cost project, which is the honest and still-compelling way to make the business case without a number I can't stand behind.",
-  "因为我不知道真实的账户规模，编一个数字出来让总数看起来更大、更唬人，恰恰是我在这个项目其他地方一直刻意避免的那种过度声称。这个项目的数据是一个按规模缩小的demo（一万个账户的评分测试集），不是机构真实的账本。所以我把增量价值——+$117,079，+63.2%——按每万个评分账户来报告，并明确说明：乘以（你真实的评分账户数/10,000）就能得到你的实际数字。真正重要、也是我真正能站住脚辩护的，是这个提升背后的机制：同样的预算、同样的RM产能，更好的targeting——而这个机制会随账本规模线性放大，不像一次性固定成本的项目，这是一个诚实、同时依然有说服力的方式去讲这个业务案例，而不是用一个我自己都无法完全站得住的数字。"
+  "Because I don't know the real book size, and inventing one to produce a bigger, more impressive-sounding total would be exactly the kind of overclaiming I've been careful to avoid everywhere else in this project. This project's data is a sized demo (a 10,000-account scored test set), not the institution's actual book. So I report the incremental value — +$116,211, +63.2% — per 10,000 scored accounts, with an explicit instruction: multiply by (your real scored-account count / 10,000) to get your actual number. The mechanism behind the gain is what matters and what I'd actually defend: same budget, same RM capacity, better targeting — and that mechanism scales linearly with book size, unlike a one-time fixed-cost project, which is the honest and still-compelling way to make the business case without a number I can't stand behind.",
+  "因为我不知道真实的账户规模，编一个数字出来让总数看起来更大、更唬人，恰恰是我在这个项目其他地方一直刻意避免的那种过度声称。这个项目的数据是一个按规模缩小的demo（一万个账户的评分测试集），不是机构真实的账本。所以我把增量价值——+$116,211，+63.2%——按每万个评分账户来报告，并明确说明：乘以（你真实的评分账户数/10,000）就能得到你的实际数字。真正重要、也是我真正能站住脚辩护的，是这个提升背后的机制：同样的预算、同样的RM产能，更好的targeting——而这个机制会随账本规模线性放大，不像一次性固定成本的项目，这是一个诚实、同时依然有说服力的方式去讲这个业务案例，而不是用一个我自己都无法完全站得住的数字。"
 ).forEach(p => children.push(p));
 
 qaBlock(12, "How would this extend toward a real production deployment? / 真要落地生产环境，还需要做什么？",
@@ -195,6 +203,11 @@ qaBlock(12, "How would this extend toward a real production deployment? / 真要
 qaBlock(13, "What would you do differently next time? / 下次你会怎么做得不一样？",
   "I'd design the dormant-play experiment from day one instead of leaving it to a selection-on-observables workaround, and I'd build the panel data richer (full month-by-month account trajectories rather than event-level samples) so the same dataset could support all three causal questions together instead of three separate analytic samples — closer to how a real production data pipeline would be structured. I'd also reach for the full `csdid`/`did` package implementation of Callaway-Sant'Anna if the staggered-DiD result needed to hold up under heavier scrutiny than the simplified clean-control version I built by hand.",
   "我会从一开始就把dormant这个动作的实验设计好，而不是靠一个selection-on-observables的变通方法去补救，也会把面板数据做得更完整（完整的逐月账户轨迹，而不是事件级抽样样本），这样同一份数据集就能同时支撑三个因果问题，而不是三个分开的分析样本——这样更接近真实生产数据管道该有的样子。如果分批DiD的结果需要经受比我手工实现的简化clean-control版本更严格的审视，我也会直接用完整的`csdid`/`did` package实现Callaway-Sant'Anna。"
+).forEach(p => children.push(p));
+
+qaBlock(14, "You said if this went to production you'd add unit tests, a config file, data validation and logging, full seeding for reproducibility, and a service layer — did you actually build those? / 你说过如果要往生产走会加单元测试、配置文件、数据校验和日志、完全seed保证可复现、再包一层服务接口——这些你真做了吗？",
+  "Yes — all six. config.py centralizes every constant (paths, SEED, model hyperparameters, budget, RM capacity, the 15% product-value-uplift rate) that used to be hardcoded separately in each script. validation.py adds fail-loud-and-early checks, and it caught a real bug while I was building it: treated_rm_contact was being derived from the UNROUNDED withdrawal_pct while the stored running variable was rounded to 2 decimals, so a handful of boundary rows (e.g. raw 29.996) could round to exactly the cutoff and disagree with their own treatment flag — not a sharp RDD anymore for those rows. I fixed it by rounding before deriving treatment. logging_setup.py adds structured console+file logging alongside — not replacing — each script's narrated print() output, since that narration is genuinely useful for a live walkthrough. For reproducibility, I found and fixed a subtler issue: numpy has two separate RNG systems, the modern Generator API (which I'd seeded) and a legacy global RandomState that scikit-learn's KFold and, transitively, DoubleML's cross-fitting fold-splitting draw from — which had never been seeded. That's what was actually causing the DoubleML estimate to drift slightly run to run, not 'DoubleML just has irreducible randomness.' config.seed_everything() now seeds both, and I pinned XGBoost to n_jobs=1 to remove multi-threaded floating-point nondeterminism too. I verified this by running the full 8-script pipeline twice independently and diffing data/, output/, and figures/ byte-for-byte — zero differences. I added a pytest suite (38+ tests) covering the config formula, every validation check's pass/fail path including the boundary bug above, the data generators' invariants, the optimizer's ILP constraints, and the service endpoints — which also meant refactoring 06_optimization.py, which had NO __main__ guard at all (running the entire optimization as an import side effect), into an importable run_optimization() function. And I wrapped the batch outputs in a FastAPI service (health check, per-account score lookup, the recommendation list, and a synchronous /optimize endpoint that re-solves the ILP under a caller-supplied budget) — deliberately not a live-retraining service, since the heavy model-fitting stays a scheduled batch job and only the cheap ILP re-solve needs to be synchronous.",
+  "全部六项都做了。config.py把之前散落在各脚本里的常量（路径、SEED、模型超参数、预算、RM产能、15%的产品价值加成率）集中到一个地方。validation.py加了'尽早报错'的校验，而且在写它的过程中真的抓到一个bug：treated_rm_contact是从没有四舍五入的withdrawal_pct算出来的，但存盘的running variable四舍五入到了2位小数，导致极少数边界行（比如原始值29.996）四舍五入后正好落在cutoff上，和自己的treatment标记不一致——对这些行来说已经不是严格的sharp RDD了。修复方式是先四舍五入再判定treatment。logging_setup.py加了结构化的console+文件日志，但没有替换掉每个脚本本身的print()叙事——因为那些叙事在真人讲解时是有实际用处的。可复现性方面我发现并修复了一个更隐蔽的问题：numpy有两套随机数系统，我之前只seed了新的Generator API，而scikit-learn的KFold、以及DoubleML内部cross-fitting做fold划分时用的，是从来没被seed过的旧版全局RandomState——这才是DoubleML估计结果每次跑会有轻微漂移的真正原因，不是'DoubleML本身就有没法消除的随机性'。现在config.seed_everything()会同时锁定这两套系统，另外把XGBoost的n_jobs固定成1，去掉多线程浮点数求和带来的不确定性。我验证的方式是把完整的8步pipeline独立跑两次，对data/、output/、figures/三个目录做字节级diff——完全没有差异。我加了一套pytest测试（38+条），覆盖config公式、每条校验规则的通过/失败路径（包括上面那个边界bug）、数据生成器的不变量、优化器ILP的约束、以及服务端点——这也顺带逼着我把06_optimization.py重构了一遍，它之前完全没有__main__保护，只要import这个文件就会把整个优化流程当副作用跑一遍，我把它拆成了一个可以被单独调用的run_optimization()函数。最后把批处理的输出包了一层FastAPI服务（健康检查、按账户查分数、建议列表、以及一个允许调用方传入不同预算实时重新求解ILP的/optimize端点）——刻意没做成'每次请求都重新训模型'的服务，因为重的模型训练留在定时批处理里，只有轻量的ILP重新求解需要做成同步的。"
 ).forEach(p => children.push(p));
 
 children.push(hr());
@@ -215,8 +228,9 @@ const rows = [
   ["Dormant play: naive vs. logistic vs. DoubleML", "+11.2pp (wrong sign) vs. +0.8pp (wrong sign) vs. -6.5pp [95% CI -8.6, -4.5] (correct sign, true ATT: -9.8pp)"],
   ["Optimization result", "+63.2% net value protected vs. heuristic, equal budget & RM capacity"],
   ["Optimization RM capacity used", "297 / 400 contacts (optimizer stops at negative marginal value, not at capacity)"],
-  ["Business impact (headline)", "+$117,079 net value per 10,000 scored accounts (+63.2%) — scale by (your accounts / 10,000)"],
+  ["Business impact (headline)", "+$116,211 net value per 10,000 scored accounts (+63.2%) — scale by (your accounts / 10,000)"],
   ["Real project result (unchanged)", "-30% relative churn, randomized A/B test"],
+  ["Production-readiness additions", "config.py, validation.py (caught a real sharp-RDD boundary bug), logging_setup.py, full RNG seeding (fixed DoubleML's unseeded legacy-RandomState drift), 38+ pytest tests, FastAPI service.py — two independent full pipeline runs diff byte-identical"],
 ];
 
 const table = new Table({
