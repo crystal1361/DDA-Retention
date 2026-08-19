@@ -2,17 +2,18 @@
   "budget": 150000,
   "rm_capacity": 400,
   "optimized": {
-    "n": 5860,
-    "spend": 80065.0,
+    "n": 5836,
+    "spend": 79825.0,
     "rm_used": 297,
-    "ev": 382443.245864005,
-    "net": 302378.245864005
+    "ev": 380011.91832544556,
+    "net": 300186.91832544556
   },
   "heuristic_capped": {
     "n": 2390,
     "spend": 92920.0,
-    "net": 185299.15397890448
+    "net": 183975.9122890814
   },
+  "efficiency_gain_pct": 63.166424664203745,
   "effect_inputs": {
     "large_withdrawal": {
       "effect_pp": 0.10689830000466406,
@@ -27,7 +28,7 @@
       "confidence": "high -- design-based (DiD), parallel pre-trends checked"
     },
     "dormant": {
-      "effect_pp": 0.0654312904648451,
+      "effect_pp": 0.06496011425355036,
       "cost": 10,
       "source": "DoubleML (IRM, selection-on-observables)",
       "confidence": "moderate -- selection-on-observables (DoubleML); unconfoundedness assumption is NOT directly testable from the data, unlike the other two"

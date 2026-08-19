@@ -2,10 +2,10 @@
   "true_att_prob_scale": -0.09799813244296049,
   "naive_diff": 0.11208783613898493,
   "logistic_ame": 0.007948407029320523,
-  "doubleml_att": -0.0654312904648451,
-  "doubleml_se": 0.010632518235068729,
-  "doubleml_ci_low": -0.08627064327054519,
-  "doubleml_ci_high": -0.044591937659145,
+  "doubleml_att": -0.06496011425355036,
+  "doubleml_se": 0.010646532309633189,
+  "doubleml_ci_low": -0.08582693414067345,
+  "doubleml_ci_high": -0.04409329436642727,
   "true_effect_logit_injected": -0.5,
   "note": "Selection-on-observables identification -- weaker than the RDD/DiD designs elsewhere in this project because unconfoundedness cannot be tested from the data. Treat as a prioritization signal, not a validated effect size."
 }

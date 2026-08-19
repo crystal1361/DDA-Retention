@@ -1,10 +1,10 @@
 {
   "scored_accounts": 10000,
   "headline_impact": {
-    "optimized_net": 302378.245864005,
-    "heuristic_net": 185299.15397890448,
-    "uplift_dollars": 117079.09188510053,
-    "uplift_pct": 63.18382430306697
+    "optimized_net": 300186.91832544556,
+    "heuristic_net": 183975.9122890814,
+    "uplift_dollars": 116211.00603636415,
+    "uplift_pct": 63.16642466420374
   },
   "value_uplift_sensitivity": {
     "spearman_by_rate": {
