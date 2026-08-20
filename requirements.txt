@@ -6,7 +6,7 @@ statsmodels
 rdrobust
 pulp
 matplotlib
-doubleml
+scipy
 pytest
 fastapi
 uvicorn
