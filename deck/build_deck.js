@@ -244,9 +244,10 @@ const pres = newPres();
 
   statCard(s, 7.55, 2.15, 5.15, 1.1, "0.65 – 0.72", "ROC-AUC per churn mode (one-vs-rest)");
   statCard(s, 7.55, 3.4, 5.15, 1.1, "2.8x – 3.2x", "Lift at top decile vs. base rate");
-  s.addText("Churn is rare (~11% combined across modes) and driven by noisy human behavior — this isn't a "
-    + "0.95-AUC problem. In production you rank and act on the top slice your capacity allows, not hard-classify "
-    + "at a single threshold, exactly like the causal layer's HV/LV split on the next slides.", {
+  s.addText("Churn is rare (~11% combined across modes) — deliberately elevated above the real project's "
+    + "~0.8% observed baseline so this compact synthetic panel still has enough events per mode to power "
+    + "RDD/DiD/RCT cleanly. Not a 0.95-AUC problem; in production you rank and act on the top slice your "
+    + "capacity allows, not hard-classify at a threshold.", {
     x: 7.55, y: 4.75, w: 5.15, h: 2.1, fontFace: FONT_BODY, fontSize: 12.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
   });
   s.addNotes(
@@ -254,7 +255,14 @@ const pres = newPres();
     + "noise level, a good sanity check that the model isn't picking up spurious geography effects. I evaluate by "
     + "ranking quality, not hard-classification accuracy, because forcing balanced weights on an 89%-none target "
     + "produces garbage precision numbers that don't reflect how the model is actually used. This layer's job is "
-    + "purely routing: WHICH causal-layer estimate applies to this account."
+    + "purely routing: WHICH causal-layer estimate applies to this account. One honest note if asked: the real "
+    + "project's actual observed baseline churn was about 0.8% over a 2-month A/B window -- this synthetic demo's "
+    + "panel intentionally runs hotter, around 11% combined across modes, because with a few thousand HV/LV "
+    + "accounts I need enough injected churn events per mode for the RDD/DiD/RCT layers to actually have "
+    + "statistical power to detect anything. At a true 0.8% base rate on this account count, most of those "
+    + "designs would come back underpowered and I'd have nothing clean to show. So the elevated rate is a "
+    + "deliberate demo-scale choice, not a claim about what real DDA churn looks like -- and I say that up front "
+    + "rather than waiting to be asked."
   );
 }
 
