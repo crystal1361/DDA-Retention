@@ -1,4 +1,4 @@
-account_id,withdrawal_pct,treated_rm_contact,tenure_months,product_count,balance,churn_next_60days
+account_id,withdrawal_pct,treated_rm_contact,tenure_months,product_count,balance,churn_within_60d
 W000000,28.21,0,32.8,3,583.86,0
 W000001,5.79,0,32.3,1,1312.6,0
 W000002,54.41,1,72.0,5,7187.19,0
