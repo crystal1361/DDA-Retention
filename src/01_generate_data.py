@@ -117,10 +117,22 @@ OUT_DIR = DATA_DIR
 # ---------------------------------------------------------------------------
 # Ground-truth effects baked into the DGP (kept in one place so later scripts
 # can grade the RDD/DiD/DoubleML estimators against them).
+#
+# OUTCOME WINDOW: every outcome column in this file (churn_within_60d,
+# churned_within_window, bad_outcome) represents "did the bad outcome happen
+# within 60 days / ~2 months of the triggering event or observation point."
+# This is deliberately matched to the REAL project's actual A/B test, which
+# ran a 2-month observation window (see 项目二DDA存款流失挽留.docx Q6). The
+# whole point of this rebuild is to show that each individual trigger's
+# causal effect is consistent with, and helps explain, the -30% relative
+# churn the real test measured over that same 2-month window -- using a
+# 1-month outcome here (an earlier version of this script did) would be
+# measuring a different quantity than what the real test validated, which
+# is exactly the kind of inconsistency a careful reviewer would catch.
 # ---------------------------------------------------------------------------
 TRUTH = {
     "rdd_cutoff": 30.0,                     # withdrawal % of balance that triggers RM outreach
-    "rdd_true_effect_logit": -0.90,         # jump in logit(churn_next_month) caused by RM contact
+    "rdd_true_effect_logit": -0.90,         # jump in logit(churn_within_60d) caused by RM contact
     "did_value_tier_labels": [              # ordered highest-value -> lowest-value; see
         "tier1_top25pct",                   # generate_did_dataset() for why rollout is
         "tier2_next25pct",                  # value-PRIORITIZED rather than random/regional
@@ -251,7 +263,7 @@ def generate_rdd_dataset(n=15_000):
                        + rng.normal(0, 0.35, n))
 
     final_logit = baseline_logit + treated * TRUTH["rdd_true_effect_logit"]
-    churn_next_month = rng.binomial(1, sigmoid(final_logit))
+    churn_within_60d = rng.binomial(1, sigmoid(final_logit))
 
     df = pd.DataFrame({
         "account_id": [f"W{i:06d}" for i in range(n)],
@@ -260,7 +272,7 @@ def generate_rdd_dataset(n=15_000):
         "tenure_months": tenure_months.round(1),
         "product_count": product_count,
         "balance": balance.round(2),
-        "churn_next_month": churn_next_month,
+        "churn_within_60d": churn_within_60d,
     })
     return df
 
@@ -357,6 +369,8 @@ def generate_did_dataset(n=12_000):
     effect_logit = offer_live * ramp_frac * TRUTH["did_true_effect_logit_max"]
 
     final_logit = baseline_logit + effect_logit
+    # "window" here is the same 60-day / ~2-month window as churn_within_60d
+    # and bad_outcome below -- see the OUTCOME WINDOW note on TRUTH above.
     churned_within_window = rng.binomial(1, sigmoid(final_logit))
 
     # Row-level TRUE causal effect on the probability scale: sigmoid(with
@@ -461,6 +475,8 @@ def generate_dormant_dataset(n=12_000):
     baseline_logit = (-0.6 + 2.0 * flagged - 0.04 * product_count
                        - 0.004 * tenure_months + rng.normal(0, 0.35, n))
     final_logit = baseline_logit + reengagement_contact * TRUTH["dormant_true_effect_logit"]
+    # same 60-day / ~2-month follow-up window as churn_within_60d and
+    # churned_within_window -- see the OUTCOME WINDOW note on TRUTH above.
     bad_outcome = rng.binomial(1, sigmoid(final_logit))
 
     # Row-level true individual treatment effect on the probability scale --
@@ -532,9 +548,9 @@ if __name__ == "__main__":
 
     print("=== rdd_data.csv ===")
     print(f"n = {len(rdd_df)}, treated share = {rdd_df['treated_rm_contact'].mean():.3f}")
-    naive_diff = (rdd_df.loc[rdd_df.treated_rm_contact == 1, "churn_next_month"].mean()
-                  - rdd_df.loc[rdd_df.treated_rm_contact == 0, "churn_next_month"].mean())
-    print(f"NAIVE (biased) treated-vs-control diff in churn_next_month: {naive_diff:+.4f}")
+    naive_diff = (rdd_df.loc[rdd_df.treated_rm_contact == 1, "churn_within_60d"].mean()
+                  - rdd_df.loc[rdd_df.treated_rm_contact == 0, "churn_within_60d"].mean())
+    print(f"NAIVE (biased) treated-vs-control diff in churn_within_60d: {naive_diff:+.4f}")
     print("(expect this to look WRONG/small or even positive -- that's the confound RDD fixes)\n")
 
     print("=== did_data.csv ===")

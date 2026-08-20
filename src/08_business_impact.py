@@ -160,7 +160,7 @@ def build_recommendations(headline):
             "action": "Formalize the 30%-withdrawal -> RM-outreach trigger as an "
                       "explicit, monitored policy rather than an ad hoc practice.",
             "why": f"RDD estimates a {effect_inputs['large_withdrawal']['effect_pp']*100:.1f}pp "
-                   f"reduction in next-month churn from RM contact at this trigger "
+                   f"reduction in 60-day churn from RM contact at this trigger "
                    f"({effect_inputs['large_withdrawal']['source']}), and the "
                    "no-manipulation assumption behind that estimate was directly "
                    "tested (McCrary-style density check), not just assumed.",

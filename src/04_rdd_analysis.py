@@ -2,7 +2,8 @@
 04_rdd_analysis.py
 
 Sharp RDD: does RM outreach triggered by a withdrawal >= 30% of balance
-causally reduce next-month churn?
+causally reduce 60-day churn (matching the real project's 2-month A/B test
+observation window -- see 01_generate_data.py's TRUTH block for why)?
 
 Uses rdrobust (Calonico-Cattaneo-Titiunik), the standard tool for this -
 MSE-optimal bandwidth selection, local-linear point estimate, and a
@@ -39,12 +40,12 @@ def sigmoid(x):
 
 
 def naive_comparison(df):
-    treated = df[df.treated_rm_contact == 1]["churn_next_month"]
-    control = df[df.treated_rm_contact == 0]["churn_next_month"]
+    treated = df[df.treated_rm_contact == 1]["churn_within_60d"]
+    control = df[df.treated_rm_contact == 0]["churn_within_60d"]
     diff = treated.mean() - control.mean()
     print("=== Naive comparison (treated vs. control, ALL data -- biased) ===")
-    print(f"treated mean churn_next_month : {treated.mean():.4f}  (n={len(treated)})")
-    print(f"control mean churn_next_month : {control.mean():.4f}  (n={len(control)})")
+    print(f"treated mean churn_within_60d : {treated.mean():.4f}  (n={len(treated)})")
+    print(f"control mean churn_within_60d : {control.mean():.4f}  (n={len(control)})")
     print(f"naive difference              : {diff:+.4f}")
     print("This mixes the TRUE negative effect of RM outreach with the confound that")
     print("bigger withdrawals were already higher-risk before any outreach happened --")
@@ -53,7 +54,7 @@ def naive_comparison(df):
 
 
 def rdd_estimate(df):
-    y = df["churn_next_month"].values
+    y = df["churn_within_60d"].values
     x = df["withdrawal_pct"].values - CUTOFF
 
     print("=== Sharp RDD (rdrobust, local-linear, MSE-optimal bandwidth) ===")
@@ -77,7 +78,7 @@ def rdd_estimate(df):
 
 
 def bandwidth_sensitivity(df):
-    y = df["churn_next_month"].values
+    y = df["churn_within_60d"].values
     x = df["withdrawal_pct"].values - CUTOFF
     print("\n=== Bandwidth sensitivity check ===")
     rows = []
@@ -98,8 +99,8 @@ def rd_plot(df, save_path):
     df = df.copy()
     df["bin"] = pd.cut(df["withdrawal_pct"], bins)
     agg = df.groupby("bin", observed=True).agg(
-        x=("withdrawal_pct", "mean"), y=("churn_next_month", "mean"),
-        n=("churn_next_month", "size")).dropna()
+        x=("withdrawal_pct", "mean"), y=("churn_within_60d", "mean"),
+        n=("churn_within_60d", "size")).dropna()
 
     left = agg[agg.x < CUTOFF]
     right = agg[agg.x >= CUTOFF]
@@ -111,13 +112,13 @@ def rd_plot(df, save_path):
     # local linear fits for visual reference (separate from the rdrobust point estimate)
     for side_df, color in [(df[df.withdrawal_pct < CUTOFF], "#2C4870"),
                             (df[df.withdrawal_pct >= CUTOFF], "#C1613C")]:
-        z = np.polyfit(side_df.withdrawal_pct, side_df.churn_next_month, 1)
+        z = np.polyfit(side_df.withdrawal_pct, side_df.churn_within_60d, 1)
         xs = np.linspace(side_df.withdrawal_pct.min(), side_df.withdrawal_pct.max(), 50)
         ax.plot(xs, np.polyval(z, xs), color=color, linewidth=2)
 
     ax.axvline(CUTOFF, color="black", linestyle="--", linewidth=1.2)
     ax.set_xlabel("Withdrawal % of balance (running variable)")
-    ax.set_ylabel("P(churn next month)")
+    ax.set_ylabel("P(churn within 60 days)")
     ax.set_title("Sharp RDD: effect of RM outreach at the 30% withdrawal trigger\n(bin size scaled by bin sample size)")
     ax.legend(fontsize=8)
     fig.tight_layout()
@@ -150,7 +151,7 @@ def grade_against_ground_truth(robust_result, df):
     # different number of percentage points depending on where you start from
     # (see step 4) -- we need the baseline AT the cutoff, not the global average.
     near_cutoff = df[(df.withdrawal_pct >= CUTOFF - 3) & (df.withdrawal_pct < CUTOFF)]
-    p0 = near_cutoff["churn_next_month"].mean()
+    p0 = near_cutoff["churn_within_60d"].mean()
     # example with real numbers from this dataset: p0 ~= 0.171 (17.1% churn
     # rate among accounts withdrawing 27-30% of balance, just left of the cutoff)
 
