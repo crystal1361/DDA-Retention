@@ -1,10 +1,10 @@
 {
   "scored_accounts": 10000,
   "headline_impact": {
-    "optimized_net": 300186.91832544556,
-    "heuristic_net": 183975.9122890814,
-    "uplift_dollars": 116211.00603636415,
-    "uplift_pct": 63.16642466420374
+    "optimized_net": 405065.8846467199,
+    "heuristic_net": 271192.6560623332,
+    "uplift_dollars": 133873.2285843867,
+    "uplift_pct": 49.364621641382556
   },
   "value_uplift_sensitivity": {
     "spearman_by_rate": {
@@ -20,30 +20,30 @@
     {
       "priority": 1,
       "action": "Replace the informal 'top 50% by value_score' retention targeting rule with the budget-constrained ILP optimizer.",
-      "why": "At equal budget and RM capacity, the optimizer protects 63% more net expected value than the current heuristic -- same spend, better targeting.",
+      "why": "At equal budget and RM capacity, the optimizer protects 49% more net expected value than the current heuristic -- same spend, better targeting.",
       "confidence": "High -- this is a mechanical improvement (better use of already-validated effect sizes and existing constraints), not a new causal claim.",
       "next_step": "Pilot the optimizer's account list against the heuristic's list on one month's retention run; compare realized churn, not just the modeled projection."
     },
     {
       "priority": 2,
       "action": "Formalize the 30%-withdrawal -> RM-outreach trigger as an explicit, monitored policy rather than an ad hoc practice.",
-      "why": "RDD estimates a 10.7pp reduction in next-month churn from RM contact at this trigger (RDD (rdrobust, robust CI)), and the no-manipulation assumption behind that estimate was directly tested (McCrary-style density check), not just assumed.",
+      "why": "RDD estimates a 8.3pp reduction in 60-day churn from RM contact at this trigger (Sharp RDD (rdrobust, robust CI)), and the no-manipulation assumption behind that estimate was directly tested (McCrary-style density check), not just assumed.",
       "confidence": "high -- design-based (RDD), no-manipulation assumption checked",
       "next_step": "Track RM capacity utilization against the 400-contact/month constraint used here; if capacity is regularly binding, that's the lever to negotiate for more impact, not budget."
     },
     {
       "priority": 3,
-      "action": "When evaluating the $100 DD-stop offer's rollout, do not judge it on early results.",
-      "why": "The effect ramps in over roughly 3 months after each wave goes live (event-study finding) -- evaluating a wave's impact in month 1 will understate its true effect and could kill a program that's actually working.",
-      "confidence": "high -- design-based (DiD), parallel pre-trends checked",
-      "next_step": "Set the earliest formal evaluation checkpoint for each rollout wave at 3+ months post-launch, not at launch+1."
+      "action": "Scale the dormant/re-engagement plays (HV cashback offer, LV SMS reminder) to the full flagged population -- this is no longer a pilot-first recommendation.",
+      "why": "Both plays were tested with a genuine randomized holdout within each tier (Randomized holdout RCT (HV tier, cashback offer); Randomized holdout RCT (LV tier, SMS reminder)), not an observational comparison -- the HV cashback play alone is the single largest contributor to the optimizer's total net value protected. Randomization means treated vs. holdout is a clean causal comparison by construction; 02_validate_design.py additionally confirms the two arms were balanced on observed covariates before the offer went out.",
+      "confidence": "high -- randomized within-tier holdout, balance checked",
+      "next_step": "Keep a small (~10%) permanent randomized holdout in production even after scaling -- not to re-litigate whether the play works, but to keep a live, up-to-date effect size as take-up and the account mix drift over time."
     },
     {
       "priority": 4,
-      "action": "Do NOT scale retention budget into the dormant/re-engagement play based on this project's number alone.",
-      "why": "It's the only one of the three effects estimated without a design-based (testable) identifying assumption -- DoubleML's validity rests on 'we observed every important confounder', which can't be verified from the data the way RDD/DiD's assumptions were.",
-      "confidence": "moderate -- selection-on-observables (DoubleML); unconfoundedness assumption is NOT directly testable from the data, unlike the other two",
-      "next_step": "Run a genuine randomized pilot (even a small one, e.g. 500 flagged accounts split 50/50) specifically for this play before committing meaningful budget -- this is the one play where a real experiment is both feasible and would meaningfully upgrade confidence."
+      "action": "When evaluating the $100 DD-stop offer's rollout, do not judge it on early results.",
+      "why": "The effect ramps in over roughly 3 months after the offer goes live for HV accounts (event-study finding) -- evaluating impact in month 1 will understate its true effect and could kill a program that's actually working.",
+      "confidence": "high -- design-based (DiD), parallel pre-trends checked",
+      "next_step": "Set the earliest formal evaluation checkpoint at 3+ months post-launch, not at launch+1."
     }
   ]
 }

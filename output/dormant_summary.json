@@ -1,0 +1,29 @@
+{
+  "hv_cashback": {
+    "n_treated": 5408,
+    "n_holdout": 592,
+    "p_treated": 0.15902366863905326,
+    "p_holdout": 0.2668918918918919,
+    "diff": -0.10786822325283862,
+    "se_pool": 0.01624878643461043,
+    "z": -6.638540280342162,
+    "p_value": 3.168043605228377e-11,
+    "ci_low": -0.14480977364123038,
+    "ci_high": -0.07092667286444687,
+    "true_effect_prob_scale": -0.1043663337647929
+  },
+  "lv_sms": {
+    "n_treated": 5392,
+    "n_holdout": 608,
+    "p_treated": 0.2689169139465875,
+    "p_holdout": 0.32730263157894735,
+    "diff": -0.058385717632359835,
+    "se_pool": 0.01909864309224313,
+    "z": -3.057061035716881,
+    "p_value": 0.002235187574160191,
+    "ci_low": -0.09751668882413915,
+    "ci_high": -0.01925474644058052,
+    "true_effect_prob_scale": -0.05965657214391691
+  },
+  "note": "Randomized within-tier holdout -- identification does not rest on an unconfoundedness assumption (unlike the prior DoubleML version of this play), so this is treated as HIGH-confidence evidence, on par with RDD/DiD, not a prioritization signal only."
+}

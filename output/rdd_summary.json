@@ -1,9 +1,9 @@
 {
-  "naive_diff": -0.014806141595904418,
-  "rdd_conventional_coef": -0.10316687464450873,
-  "rdd_conventional_p": 5.234320424016379e-09,
-  "rdd_robust_coef": -0.10689830000466406,
-  "rdd_robust_ci_low": -0.14800779206097564,
-  "rdd_robust_ci_high": -0.06578880794835248,
-  "rdd_robust_p": 3.4588873851087115e-07
+  "naive_diff": -0.00162008397086498,
+  "rdd_conventional_coef": -0.07883382282117363,
+  "rdd_conventional_p": 3.843447982875524e-06,
+  "rdd_robust_coef": -0.08286375863608891,
+  "rdd_robust_ci_low": -0.12260809810650058,
+  "rdd_robust_ci_high": -0.04311941916567724,
+  "rdd_robust_p": 4.3817927828202964e-05
 }

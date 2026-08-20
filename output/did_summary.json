@@ -1,6 +1,13 @@
 {
-  "naive_twfe_coef": -0.034948136926376154,
-  "naive_twfe_p": 0.0008325988730407758,
-  "clean_control_overall_att": -0.03686621453538054,
-  "true_effect_prob_scale": -0.04668352172753932
+  "did_2x2_pre_hv": 0.11882193635748138,
+  "did_2x2_post_hv": 0.058108995403808275,
+  "did_2x2_pre_lv": 0.17767348307073416,
+  "did_2x2_post_lv": 0.1750082863771959,
+  "did_2x2_att": -0.05804774426013484,
+  "did_regression_coef": -0.057792043980427726,
+  "did_regression_se": 0.012256420801796892,
+  "did_regression_p": 2.414184232402727e-06,
+  "did_regression_ci_low": -0.08181418733131716,
+  "did_regression_ci_high": -0.03376990062953829,
+  "true_effect_prob_scale": -0.050984137557452396
 }
