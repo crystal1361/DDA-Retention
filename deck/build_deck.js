@@ -242,27 +242,34 @@ const pres = newPres();
 
   s.addImage({ path: FIG("feature_importance.png"), x: 0.6, y: 2.15, w: 6.7, h: 4.75 });
 
-  statCard(s, 7.55, 2.15, 5.15, 1.1, "0.65 – 0.72", "ROC-AUC per churn mode (one-vs-rest)");
-  statCard(s, 7.55, 3.4, 5.15, 1.1, "2.8x – 3.2x", "Lift at top decile vs. base rate");
-  s.addText("Churn is rare (~11% combined across modes) — deliberately elevated above the real project's "
+  statCard(s, 7.55, 2.15, 5.15, 1.1, "0.66 – 0.74", "ROC-AUC per churn mode (one-vs-rest)");
+  statCard(s, 7.55, 3.4, 5.15, 1.1, "2.1x – 3.8x", "Lift at top decile vs. base rate");
+  s.addText("Churn is rare (~12% combined across modes) — deliberately elevated above the real project's "
     + "~0.8% observed baseline so this compact synthetic panel still has enough events per mode to power "
-    + "RDD/DiD/RCT cleanly. Not a 0.95-AUC problem; in production you rank and act on the top slice your "
+    + "RDD/DiD/RCT cleanly. Top drivers are plain account facts — prior dormancy, product count, tenure — "
+    + "not engineered scores. Not a 0.95-AUC problem; in production you rank and act on the top slice your "
     + "capacity allows, not hard-classify at a threshold.", {
     x: 7.55, y: 4.75, w: 5.15, h: 2.1, fontFace: FONT_BODY, fontSize: 12.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
   });
   s.addNotes(
-    "Engagement, DD stability, and liquidity-need scores dominate, as expected -- and region importance sits at "
-    + "noise level, a good sanity check that the model isn't picking up spurious geography effects. I evaluate by "
-    + "ranking quality, not hard-classification accuracy, because forcing balanced weights on an 89%-none target "
-    + "produces garbage precision numbers that don't reflect how the model is actually used. This layer's job is "
-    + "purely routing: WHICH causal-layer estimate applies to this account. One honest note if asked: the real "
-    + "project's actual observed baseline churn was about 0.8% over a 2-month A/B window -- this synthetic demo's "
-    + "panel intentionally runs hotter, around 11% combined across modes, because with a few thousand HV/LV "
-    + "accounts I need enough injected churn events per mode for the RDD/DiD/RCT layers to actually have "
-    + "statistical power to detect anything. At a true 0.8% base rate on this account count, most of those "
-    + "designs would come back underpowered and I'd have nothing clean to show. So the elevated rate is a "
-    + "deliberate demo-scale choice, not a claim about what real DDA churn looks like -- and I say that up front "
-    + "rather than waiting to be asked."
+    "Every top driver here is a plain account fact, not an engineered score: prior dormancy_streak_months is the "
+    + "single strongest predictor of the model -- unsurprising, since having been dormant before is one of the "
+    + "cleanest recency signals in churn modeling generally. product_count and tenure_months come next -- fewer "
+    + "products and shorter tenure both track a less-embedded relationship. I deliberately kept a few softer "
+    + "behavioral scores (engagement, DD-stability, liquidity-need) in the feature set as minor secondary signal, "
+    + "but I didn't want the story's TOP driver to be a score I'd have to explain the derivation of if pushed --  "
+    + "'this account had 2 prior dormant months' is a one-sentence, no-methodology-required answer. Region "
+    + "importance sits at noise level at the bottom of the chart, a good sanity check that the model isn't "
+    + "picking up spurious geography effects. I evaluate by ranking quality, not hard-classification accuracy, "
+    + "because forcing balanced weights on an 88%-none target produces garbage precision numbers that don't "
+    + "reflect how the model is actually used. This layer's job is purely routing: WHICH causal-layer estimate "
+    + "applies to this account. One honest note if asked: the real project's actual observed baseline churn was "
+    + "about 0.8% over a 2-month A/B window -- this synthetic demo's panel intentionally runs hotter, around 12% "
+    + "combined across modes, because with a few thousand HV/LV accounts I need enough injected churn events per "
+    + "mode for the RDD/DiD/RCT layers to actually have statistical power to detect anything. At a true 0.8% "
+    + "base rate on this account count, most of those designs would come back underpowered and I'd have nothing "
+    + "clean to show. So the elevated rate is a deliberate demo-scale choice, not a claim about what real DDA "
+    + "churn looks like -- and I say that up front rather than waiting to be asked."
   );
 }
 
@@ -556,13 +563,13 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "Optimize — Result");
-  slideTitle(s, "Same budget, same RM capacity: ~49% more value protected");
+  slideTitle(s, "Same budget, same RM capacity: ~64% more value protected");
   pageNum(s, 14);
 
   s.addImage({ path: FIG("optimization_comparison.png"), x: 0.6, y: 2.15, w: 6.7, h: 4.75 });
 
-  statCard(s, 7.55, 2.15, 5.15, 1.15, "+49.4%", "Net value protected vs. the heuristic, at equal budget & RM capacity");
-  statCard(s, 7.55, 3.45, 5.15, 1.15, "160 / 400", "RM contacts used — the optimizer stops once marginal expected value turns negative, not when capacity runs out");
+  statCard(s, 7.55, 2.15, 5.15, 1.15, "+64.3%", "Net value protected vs. the heuristic, at equal budget & RM capacity");
+  statCard(s, 7.55, 3.45, 5.15, 1.15, "193 / 400", "RM contacts used — the optimizer stops once marginal expected value turns negative, not when capacity runs out");
   s.addText("The heuristic doesn't discriminate by risk LEVEL within the top-50%-value pool, and it has no "
     + "notion of an RM-capacity limit at all (uncapped, it actually overspends both budget and RM capacity on "
     + "its own). The optimizer ranks by expected payoff per dollar and per RM-minute directly, and is disciplined "
@@ -573,7 +580,7 @@ const pres = newPres();
     "Walk through this carefully: the heuristic, run without any cap, overspends both the budget and the RM "
     + "capacity on its own -- that's itself a finding worth surfacing to the business, since it means the "
     + "original process needed an unwritten manual cap that the optimization now formalizes. The dormant "
-    + "cashback play alone accounts for the majority of the optimizer's total net value ($328k of $405k) -- worth "
+    + "cashback play alone accounts for the majority of the optimizer's total net value ($364k of $429k) -- worth "
     + "calling out since it's also the play with the most causal-identification headroom gained in this redesign."
   );
 }
@@ -587,7 +594,7 @@ const pres = newPres();
 
   s.addImage({ path: FIG("business_impact_headline.png"), x: 0.6, y: 2.15, w: 6.1, h: 4.75 });
 
-  statCard(s, 7.05, 2.15, 5.65, 1.25, "+$133,873", "Incremental net value protected, per 10,000 scored accounts (+49.4%)");
+  statCard(s, 7.05, 2.15, 5.65, 1.25, "+$167,927", "Incremental net value protected, per 10,000 scored accounts (+64.3%)");
   s.addText("Deliberately NOT scaled to a fabricated \"total accounts at the bank\" number — this project's "
     + "data is a sized demo, not the real book. Reported per 10,000 scored accounts with an explicit scaling "
     + "instruction instead: multiply by (your real scored-account count / 10,000). The mechanism — same spend, "
