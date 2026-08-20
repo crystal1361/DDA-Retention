@@ -1,10 +1,10 @@
 {
   "scored_accounts": 10000,
   "headline_impact": {
-    "optimized_net": 405065.8846467199,
-    "heuristic_net": 271192.6560623332,
-    "uplift_dollars": 133873.2285843867,
-    "uplift_pct": 49.364621641382556
+    "optimized_net": 429072.2288677859,
+    "heuristic_net": 261145.59061545483,
+    "uplift_dollars": 167926.63825233106,
+    "uplift_pct": 64.30383827525863
   },
   "value_uplift_sensitivity": {
     "spearman_by_rate": {
@@ -20,7 +20,7 @@
     {
       "priority": 1,
       "action": "Replace the informal 'top 50% by value_score' retention targeting rule with the budget-constrained ILP optimizer.",
-      "why": "At equal budget and RM capacity, the optimizer protects 49% more net expected value than the current heuristic -- same spend, better targeting.",
+      "why": "At equal budget and RM capacity, the optimizer protects 64% more net expected value than the current heuristic -- same spend, better targeting.",
       "confidence": "High -- this is a mechanical improvement (better use of already-validated effect sizes and existing constraints), not a new causal claim.",
       "next_step": "Pilot the optimizer's account list against the heuristic's list on one month's retention run; compare realized churn, not just the modeled projection."
     },

@@ -2,18 +2,18 @@
   "budget": 150000,
   "rm_capacity": 400,
   "optimized": {
-    "n": 7676,
-    "spend": 128312.0,
-    "rm_used": 160,
-    "ev": 533377.8846467199,
-    "net": 405065.8846467199
+    "n": 7720,
+    "spend": 118914.0,
+    "rm_used": 193,
+    "ev": 547986.2288677859,
+    "net": 429072.2288677859
   },
   "heuristic_capped": {
-    "n": 2390,
-    "spend": 130720.0,
-    "net": 271192.6560623332
+    "n": 1765,
+    "spend": 102670.0,
+    "net": 261145.59061545483
   },
-  "efficiency_gain_pct": 49.364621641382556,
+  "efficiency_gain_pct": 64.30383827525863,
   "effect_inputs": {
     "large_withdrawal": {
       "effect_pp": 0.08286375863608891,

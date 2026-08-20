@@ -1,10 +1,10 @@
                   precision    recall  f1-score   support
 
-            none      0.887     1.000     0.940      8868
-large_withdrawal      0.000     0.000     0.000       274
-         dd_stop      0.000     0.000     0.000       285
-         dormant      0.333     0.002     0.003       573
+            none      0.882     0.999     0.937      8795
+large_withdrawal      0.000     0.000     0.000       293
+         dd_stop      0.000     0.000     0.000       302
+         dormant      0.698     0.049     0.092       610
 
-        accuracy                          0.887     10000
-       macro avg      0.305     0.250     0.236     10000
-    weighted avg      0.806     0.887     0.834     10000
+        accuracy                          0.881     10000
+       macro avg      0.395     0.262     0.257     10000
+    weighted avg      0.818     0.881     0.829     10000
