@@ -137,13 +137,37 @@ RDD_CUTOFF = 30.0   # withdrawal % of balance that triggers RM outreach
 
 
 # ---------------------------------------------------------------------------
-# DiD design: value-tier labels or rollout months live in
-# data/ground_truth.json (written by 01_generate_data.py) rather than here,
-# because they are OUTPUTS of the data-generating process that later scripts
-# read back -- ground_truth.json, not this file, is the single source of
-# truth for "what did the DGP actually inject", which matters because it's
-# also what grade_against_ground_truth() functions read from.
+# High-value / low-value split -- used consistently by RDD, DiD, and the
+# dormant RCT to decide who gets the real (funded) intervention vs. nothing
+# or a cheap generic touch. Not a statistical choice -- it's the same ROI
+# logic the real project used (see 项目二DDA存款流失挽留.docx Q4: "ranked by
+# value score and drew the line where the expected return on a retention
+# touch dropped below its cost... For the top half... the deposits and
+# lifetime value we'd protect clearly outweighed the cost. Below that the
+# economics got thin"). Kept as ONE constant, imported everywhere the split
+# is needed, so "why 50%" always traces back to the same single business
+# answer instead of three separately-justified cutoffs.
 # ---------------------------------------------------------------------------
+HV_VALUE_PERCENTILE = 0.50   # top 50% by account_value = "high value" (HV); bottom 50% = "low value" (LV)
+
+
+# ---------------------------------------------------------------------------
+# DiD design: the DD-stop $100 offer launches for HV accounts on a single
+# calendar month (LV accounts never get it in-window -- same ROI logic as
+# above). Injected true effects and ramp still live in data/ground_truth.json
+# (written by 01_generate_data.py), because they are OUTPUTS of the DGP that
+# later scripts read back -- ground_truth.json is the single source of truth
+# for "what did the DGP actually inject".
+# ---------------------------------------------------------------------------
+DID_LAUNCH_MONTH = 12   # calendar month (0-23) the offer goes live for HV accounts
+
+
+# ---------------------------------------------------------------------------
+# Dormant re-engagement RCT: two different plays, one per value tier, each
+# with its own small randomized holdout (see 01_generate_data.py's
+# generate_dormant_dataset() for the full design rationale).
+# ---------------------------------------------------------------------------
+DORMANT_HOLDOUT_FRAC = 0.10   # share of each value tier randomly held out (no offer at all)
 
 
 # ---------------------------------------------------------------------------
@@ -164,32 +188,22 @@ TEST_SIZE = 0.25
 
 
 # ---------------------------------------------------------------------------
-# DoubleML nuisance-model hyperparameters (07_doubleml_dormant.py)
-# ---------------------------------------------------------------------------
-DOUBLEML_XGB_PARAMS = dict(
-    n_estimators=120,
-    max_depth=2,
-    learning_rate=0.05,
-    reg_lambda=2.0,
-    subsample=0.8,
-    colsample_bytree=0.8,
-    eval_metric="logloss",
-    random_state=SEED,
-    n_jobs=XGB_N_JOBS,
-)
-DOUBLEML_N_FOLDS = 5
-DOUBLEML_N_REP = 5
-
-
-# ---------------------------------------------------------------------------
 # Optimization layer (06_optimization.py)
 # ---------------------------------------------------------------------------
 BUDGET = 150_000          # total monthly retention spend
 RM_CAPACITY = 400         # max large-withdrawal RM contacts the team can make in a month
 INTERVENTION_COST = {
-    "large_withdrawal": 75,
-    "dd_stop": 100,
-    "dormant": 10,
+    "large_withdrawal": 75,     # RM staff time, proxy $ cost
+    "dd_stop": 100,              # flat $100 offer
+    # dormant_cashback: 90-day, 5% cashback on grocery-category spend, HV tier
+    # only. Assumed ~$1,200 of grocery spend over 90 days ($400/mo median)
+    # times 5% = $60 MAX exposure per account if fully spent and redeemed;
+    # assumed ~60% uptake/redemption in practice -> ~$36, rounded to a clean
+    # $35. Documented as an assumption (same pattern as PRODUCT_VALUE_UPLIFT)
+    # -- the exact number isn't load-bearing for the optimizer's targeting
+    # decision as long as it's in the right ballpark; see 08_business_impact.py.
+    "dormant_cashback": 35,
+    "dormant_sms": 1,            # SMS/email reminder, LV tier only -- near-zero marginal cost
 }
 CANDIDATE_MIN_PROBA = 0.01     # floor below which an account-intervention pair isn't worth modeling
 

@@ -1,43 +1,40 @@
 """
 05_did_analysis.py
 
-Staggered-rollout DiD: does the "$100 for 2 direct deposits >= $500" offer
-reduce churn among accounts that just stopped direct deposit?
+Does the "$100 for 2 direct deposits >= $500" offer reduce churn among
+accounts that just stopped direct deposit?
 
-The offer is rolled out in VALUE-PRIORITIZED WAVES, not all at once -- see
-01_generate_data.py's generate_did_dataset() docstring for the business
-reason (limited RM/ops capacity, so highest-value accounts get reached
-first; the lowest value quartile never gets reached in-window). That
-staggered timing is exactly the situation where the textbook two-way-
-fixed-effects (TWFE) DiD regression can be BIASED, because it implicitly
-uses already-treated cohorts as part of the "control" trend for later-
-treated cohorts (Goodman-Bacon 2021) -- and here that bias is compounded by
-the fact that WHICH cohort a tier is (i.e. how early it's treated) is itself
-correlated with account value, which independently predicts lower churn.
-The bias shows up specifically when the treatment effect isn't flat over
-time -- and here it isn't: the DGP has the offer's effect ramp up over its
-first 3 months (awareness/take-up lag), so an early-adopting cohort's
-partially-matured effect contaminates the comparison used for a later
-cohort.
+REDESIGNED (see 01_generate_data.py's module docstring for the full
+rationale): the offer launches for HIGH-VALUE (HV) accounts on a single
+calendar month (DID_LAUNCH_MONTH); LOW-VALUE (LV) accounts never receive
+it in-window. That is a plain 2-group / single-adoption-date DiD, not a
+staggered rollout -- there is exactly one treated group and one
+never-treated group, and the treated group's "post" period starts on the
+same calendar month for every account in it. That deliberately avoids the
+Goodman-Bacon (2021) staggered-adoption bias that a multi-cohort rollout
+would introduce (an earlier version of this project did have staggered,
+value-tier-prioritized waves, and needed a "clean-control" estimator to
+correct for it -- that machinery is gone here because the design itself no
+longer needs correcting for).
 
-This script estimates two things and compares them:
-  1. Naive static TWFE: churn ~ offer_live + value-tier FE + calendar-month FE
-  2. A "clean-control" (a.k.a. stacked) DiD estimator: for each value tier
-     that ever adopts the offer, run a plain 2x2 DiD against ONLY the
-     never-treated tier (never contaminated by treatment at any horizon),
-     then aggregate across tiers. This is deliberately described in plain
-     language rather than by citing a specific named estimator (e.g.
-     Callaway & Sant'Anna 2021) -- the actual computation here is the
-     simple, intuitive version of "only ever compare a treated group to a
-     group that was never treated", closer in spirit to the "stacked
-     regression" approach in Cengiz et al. (2019) than to the full
-     Callaway-Sant'Anna machinery (which additionally does doubly-robust
-     estimation and a multiplier-bootstrap for inference -- machinery this
-     script does not implement, so it shouldn't be name-dropped as if it
-     did). Simpler claim, fully defensible, and it's exactly what the code
-     below does.
-Both are graded against the true average post-adoption effect implied by the
-DGP's ramp function.
+The estimator is the textbook 2x2 DiD:
+    ATT = (post_HV - pre_HV) - (post_LV - pre_LV)
+computed two ways that must agree: (1) directly from the four group means,
+and (2) as the coefficient on offer_live in a regression that also absorbs
+value-group and calendar-month fixed effects (equivalent to the 2x2
+differencing, but gives us a standard error/p-value for inference "for
+free").
+
+IDENTIFICATION ASSUMPTION -- parallel trends: absent the offer, HV and LV
+accounts' churn rates would have moved in parallel (not necessarily at the
+same LEVEL -- HV accounts churn less overall regardless of any offer -- but
+the same DIRECTION/SLOPE month to month). 02_validate_design.py tests this
+directly on the pre-period (event_month < DID_LAUNCH_MONTH), where neither
+group has been treated yet.
+
+Graded against the true average post-launch effect implied by the DGP's
+ramp function (the offer's effect phases in over ~3 months of
+awareness/take-up lag, not an instant jump -- see the event-study plot).
 """
 
 import json
@@ -49,7 +46,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-from config import DATA_DIR, FIG_DIR, OUT_DIR
+from config import DATA_DIR, FIG_DIR, OUT_DIR, DID_LAUNCH_MONTH
 from validation import validate_did_data
 from logging_setup import get_logger
 
@@ -60,122 +57,93 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
-def naive_twfe(df):
-    print("=== Naive static TWFE DiD (value-tier FE + calendar-month FE) ===")
-    # Robust (HC1) rather than cluster-robust SEs here: there are only 4
-    # value tiers, and cluster-robust standard errors need a reasonably
-    # large NUMBER of clusters to be trustworthy asymptotically -- 4 is too
-    # few to lean on. HC1 (heteroskedasticity-robust) is the honest choice
-    # given that constraint, and it's what a careful analyst would actually
-    # do here rather than clustering just because "that's what you do in
-    # panel DiD" -- the right robust-SE choice depends on how many clusters
-    # you actually have.
-    model = smf.ols("churned_within_window ~ offer_live + C(value_tier) + C(event_month)",
+def two_by_two_did(df):
+    """The DiD estimate computed the most literal way possible: four group
+    means, differenced twice. No regression, no fixed effects -- this is
+    the number every other estimate below should exactly reproduce, and
+    it's the version that's easiest to defend on a whiteboard if asked
+    "how does DiD actually work" in an interview."""
+    print("=== 2x2 DiD (four group means) ===")
+    hv = df[df.value_group == "high"]
+    lv = df[df.value_group == "low"]
+
+    pre_hv = hv[hv.event_month < DID_LAUNCH_MONTH]["churned_within_window"].mean()
+    post_hv = hv[hv.event_month >= DID_LAUNCH_MONTH]["churned_within_window"].mean()
+    pre_lv = lv[lv.event_month < DID_LAUNCH_MONTH]["churned_within_window"].mean()
+    post_lv = lv[lv.event_month >= DID_LAUNCH_MONTH]["churned_within_window"].mean()
+
+    hv_change = post_hv - pre_hv
+    lv_change = post_lv - pre_lv
+    att = hv_change - lv_change
+
+    print(f"High-value (treated): pre={pre_hv:.4f}  post={post_hv:.4f}  change={hv_change:+.4f}")
+    print(f"Low-value  (control): pre={pre_lv:.4f}  post={post_lv:.4f}  change={lv_change:+.4f}")
+    print(f"DiD = (HV change) - (LV change) = {hv_change:+.4f} - ({lv_change:+.4f}) = {att:+.4f}\n")
+    return {"pre_hv": pre_hv, "post_hv": post_hv, "pre_lv": pre_lv, "post_lv": post_lv, "att": att}
+
+
+def regression_did(df):
+    """Same estimate, via regression, with value-group and calendar-month
+    fixed effects absorbed and an HC1 robust SE attached -- this is what
+    lets us report a p-value / CI, not just a point estimate. The
+    offer_live coefficient here should match two_by_two_did()'s att almost
+    exactly (any tiny gap is float rounding), because with only 2 groups
+    and 1 adoption date, offer_live IS the treated*post interaction --
+    there's no additional cohort-averaging step for the regression to do
+    differently."""
+    print("=== Regression DiD (value-group FE + calendar-month FE, HC1 robust SE) ===")
+    model = smf.ols("churned_within_window ~ offer_live + C(value_group) + C(event_month)",
                      data=df).fit(cov_type="HC1")
     coef = model.params["offer_live"]
     se = model.bse["offer_live"]
     p = model.pvalues["offer_live"]
-    print(f"offer_live coefficient: {coef:+.4f}  (HC1 robust SE={se:.4f}, p={p:.4f})")
-    print("This pools ALL post-adoption observations under one flat 'offer_live' effect,")
-    print("and implicitly leans on already-treated (higher-value) tiers as part of the")
-    print("comparison trend for later (lower-value) tiers -- exactly the setup")
-    print("Goodman-Bacon shows can bias TWFE when the effect isn't constant over time,")
-    print("made worse here because tier ALSO independently predicts baseline churn.\n")
-    return {"coef": coef, "se": se, "p": p}
-
-
-def clean_control_did(df):
-    print("=== Clean-control (stacked) DiD -- never-treated tier as the only control ===")
-    never = df[df["cohort"] == "never"]
-
-    with open(os.path.join(DATA_DIR, "ground_truth.json")) as f:
-        truth = json.load(f)
-    # Pull adoption months from ground truth rather than hardcoding them a
-    # second time here -- one source of truth, so a future change to the
-    # rollout schedule in 01_generate_data.py can't silently desync from
-    # what this script assumes.
-    cohorts = {tier: month for tier, month in truth["did_adoption_months"].items()
-               if month is not None}
-
-    rows = []
-    for cohort_name, g in cohorts.items():
-        treat_g = df[df["cohort"] == cohort_name]
-        pre_g = treat_g[treat_g.event_month < g]["churned_within_window"].mean()
-        post_g = treat_g[treat_g.event_month >= g]["churned_within_window"].mean()
-        pre_c = never[never.event_month < g]["churned_within_window"].mean()
-        post_c = never[never.event_month >= g]["churned_within_window"].mean()
-
-        # This is a plain 2x2 DiD, done once per adoption cohort:
-        #   (post-treated - pre-treated) - (post-control - pre-control)
-        # The ONLY thing that makes this different from a textbook 2x2 DiD
-        # is that "control" here is ALWAYS the never-treated tier, never
-        # another (already-treated) cohort -- that's the one change that
-        # avoids the staggered-adoption bias entirely.
-        att_g = (post_g - pre_g) - (post_c - pre_c)
-        n_post = (treat_g.event_month >= g).sum()
-        rows.append({"cohort": cohort_name, "adoption_month": g,
-                      "pre": pre_g, "post": post_g, "att": att_g, "n_post": n_post})
-        print(f"{cohort_name}: pre={pre_g:.4f} post={post_g:.4f} | "
-              f"control pre={pre_c:.4f} post={post_c:.4f} -> ATT(g)={att_g:+.4f}  (n_post={n_post})")
-
-    cs_df = pd.DataFrame(rows)
-    # Aggregate the per-cohort ATTs into one overall number, weighting each
-    # cohort by how many post-adoption observations it contributes -- a
-    # cohort we've observed for longer / with more accounts should count
-    # for more than a cohort we've barely started observing.
-    overall_att = np.average(cs_df["att"], weights=cs_df["n_post"])
-    print(f"\nAggregate ATT (weighted by cohort post-period size): {overall_att:+.4f}\n")
-    return cs_df, overall_att
+    ci_low, ci_high = model.conf_int().loc["offer_live"]
+    print(f"offer_live coefficient: {coef:+.4f}  (HC1 robust SE={se:.4f}, "
+          f"95% CI [{ci_low:+.4f}, {ci_high:+.4f}], p={p:.4f})\n")
+    return {"coef": coef, "se": se, "p": p, "ci_low": ci_low, "ci_high": ci_high}
 
 
 def event_study_plot(df, save_path):
-    treated = df[df["offer_live"] == 1].copy()
-    agg = (treated.groupby("months_since_adoption")["churned_within_window"]
-           .agg(["mean", "count"]).reset_index())
-    agg = agg[agg["count"] >= 30]  # drop sparse tail bins
-
-    never_baseline = df[df["cohort"] == "never"]["churned_within_window"].mean()
+    """Two things in one plot: (1) do HV and LV move in parallel BEFORE
+    the launch month (visual check backing 02_validate_design.py's formal
+    pre-trends test), and (2) does the post-launch gap open up gradually
+    over ~3 months (the ramp) rather than jumping instantly, which is what
+    the DGP actually injects."""
+    agg = (df.groupby(["value_group", "event_month"])["churned_within_window"]
+           .mean().reset_index())
 
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
-    ax.plot(agg["months_since_adoption"], agg["mean"], marker="o", color="#C1613C",
-             label="Treated accounts (post-adoption), by months since offer went live")
-    ax.axhline(never_baseline, color="#2C4870", linestyle="--",
-                label=f"Never-treated baseline ({never_baseline:.3f})")
-    ax.set_xlabel("Months since offer went live for the account's value tier")
+    for grp, color, label in [("high", "#C1613C", "High-value (treated)"),
+                               ("low", "#2C4870", "Low-value (control)")]:
+        g = agg[agg.value_group == grp]
+        ax.plot(g["event_month"], g["churned_within_window"], marker="o",
+                 color=color, label=label)
+    ax.axvline(DID_LAUNCH_MONTH - 0.5, color="black", linestyle="--", linewidth=1.2,
+                label="Offer launch (HV only)")
+    ax.set_xlabel("Calendar month")
     ax.set_ylabel("Churn-within-window rate")
-    ax.set_title("Event study: the offer's effect ramps in over ~3 months\n(not an instant jump)")
+    ax.set_title("DiD: HV vs. LV churn before/after the offer launches for HV\n"
+                  "(pre-launch: should move in parallel -- see 02_validate_design.py)")
     ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(save_path, dpi=150)
     plt.close(fig)
 
 
-def grade_against_ground_truth(df, naive_result, overall_att):
-    # True average post-adoption effect, on the probability scale, averaged
+def grade_against_ground_truth(df, two_by_two, reg_result):
+    # True average post-launch effect, on the probability scale, averaged
     # over treated (offer_live==1) observations. Read directly from the
-    # 'true_effect_prob' column that 01_generate_data.py computed row-by-row
-    # from its own baseline_logit -- i.e. this is EXACT, not an
-    # approximation borrowed from some other group's average rate.
-    #
-    # (An earlier version of this script approximated it using the
-    # never-treated tier's calendar-month-matched average rate as a stand-in
-    # baseline. That approximation quietly assumed treated and never-treated
-    # groups share the same baseline level, which is fine when the grouping
-    # variable barely affects the baseline (as with the old region-based
-    # design) but breaks once the grouping variable is STRONGLY related to
-    # baseline risk by construction -- exactly what value-tiering does here.
-    # Using each row's own DGP-implied counterfactual avoids that mismatch
-    # entirely, which matters because we deliberately want the confound to
-    # be large enough that naive TWFE visibly struggles with it.)
+    # 'true_effect_prob' column 01_generate_data.py computed row-by-row --
+    # exact, not an approximation borrowed from some other group's rate.
     treated = df[df["offer_live"] == 1].copy()
     true_effect_prob_scale = treated["true_effect_prob"].mean()
 
-    print("=== Grading both estimators against injected ground truth ===")
-    print(f"True average post-adoption effect (probability scale): {true_effect_prob_scale:+.4f}")
-    print(f"Naive static TWFE estimate                            : {naive_result['coef']:+.4f}  "
-          f"(off by {naive_result['coef'] - true_effect_prob_scale:+.4f})")
-    print(f"Clean-control (stacked) DiD aggregate ATT             : {overall_att:+.4f}  "
-          f"(off by {overall_att - true_effect_prob_scale:+.4f})")
+    print("=== Grading against injected ground truth ===")
+    print(f"True average post-launch effect (probability scale) : {true_effect_prob_scale:+.4f}")
+    print(f"2x2 DiD (four group means)                           : {two_by_two['att']:+.4f}  "
+          f"(off by {two_by_two['att'] - true_effect_prob_scale:+.4f})")
+    print(f"Regression DiD (offer_live coefficient)              : {reg_result['coef']:+.4f}  "
+          f"(off by {reg_result['coef'] - true_effect_prob_scale:+.4f})")
     return true_effect_prob_scale
 
 
@@ -183,25 +151,31 @@ if __name__ == "__main__":
     logger.info("05_did_analysis: starting")
     df = pd.read_csv(os.path.join(DATA_DIR, "did_data.csv"))
     try:
-        validate_did_data(df, tier_col="value_tier")
+        validate_did_data(df, value_col="value_group")
     except Exception:
         logger.exception("05_did_analysis: input validation failed")
         raise
 
-    naive_result = naive_twfe(df)
-    cc_df, overall_att = clean_control_did(df)
+    two_by_two = two_by_two_did(df)
+    reg_result = regression_did(df)
     event_study_plot(df, os.path.join(FIG_DIR, "did_event_study.png"))
-    true_effect = grade_against_ground_truth(df, naive_result, overall_att)
+    true_effect = grade_against_ground_truth(df, two_by_two, reg_result)
 
-    cc_df.to_csv(os.path.join(OUT_DIR, "did_cohort_att.csv"), index=False)
     summary = {
-        "naive_twfe_coef": naive_result["coef"],
-        "naive_twfe_p": naive_result["p"],
-        "clean_control_overall_att": overall_att,
+        "did_2x2_pre_hv": two_by_two["pre_hv"],
+        "did_2x2_post_hv": two_by_two["post_hv"],
+        "did_2x2_pre_lv": two_by_two["pre_lv"],
+        "did_2x2_post_lv": two_by_two["post_lv"],
+        "did_2x2_att": two_by_two["att"],
+        "did_regression_coef": reg_result["coef"],
+        "did_regression_se": reg_result["se"],
+        "did_regression_p": reg_result["p"],
+        "did_regression_ci_low": reg_result["ci_low"],
+        "did_regression_ci_high": reg_result["ci_high"],
         "true_effect_prob_scale": true_effect,
     }
     with open(os.path.join(OUT_DIR, "did_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
-    print(f"\nSaved figures/did_event_study.png, output/did_cohort_att.csv, output/did_summary.json")
-    logger.info("05_did_analysis: done, naive TWFE=%+.4f, clean-control ATT=%+.4f, true=%+.4f",
-                naive_result["coef"], overall_att, true_effect)
+    print(f"\nSaved figures/did_event_study.png, output/did_summary.json")
+    logger.info("05_did_analysis: done, 2x2 ATT=%+.4f, regression coef=%+.4f, true=%+.4f",
+                two_by_two["att"], reg_result["coef"], true_effect)

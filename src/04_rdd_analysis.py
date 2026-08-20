@@ -5,6 +5,16 @@ Sharp RDD: does RM outreach triggered by a withdrawal >= 30% of balance
 causally reduce 60-day churn (matching the real project's 2-month A/B test
 observation window -- see 01_generate_data.py's TRUTH block for why)?
 
+POPULATION: high-value (HV, top 50% by account_value) accounts only -- see
+config.py's HV_VALUE_PERCENTILE and 01_generate_data.py's module docstring.
+This mirrors the real project's ROI logic (funded RM outreach only pencils
+out above that cutoff; see the account-value-split rationale used
+consistently across RDD/DiD/dormant) and keeps the running variable's
+relationship to the outcome from being confounded by a second, unrelated
+value split -- rdrobust is estimating a strictly local effect right at the
+30%-withdrawal cutoff, so it's estimating that effect specifically FOR the
+HV population it was tested on, not claiming to generalize to LV accounts.
+
 Uses rdrobust (Calonico-Cattaneo-Titiunik), the standard tool for this -
 MSE-optimal bandwidth selection, local-linear point estimate, and a
 bias-corrected robust CI (the "conventional" estimate is what you'd naively

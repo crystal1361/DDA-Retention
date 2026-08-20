@@ -172,19 +172,24 @@ def validate_rdd_data(df, *, cutoff, running_var="withdrawal_pct",
         )
 
 
-def validate_did_data(df, *, tier_col="value_tier", expected_tiers=4):
-    """Validate the value-tier staggered DiD dataset."""
+def validate_did_data(df, *, value_col="value_group", expected_groups=2):
+    """Validate the high/low-value 2-group DiD dataset.
+
+    (Previously this checked for 4 staggered-adoption value tiers --
+    the project was redesigned to a plain 2-group HV/LV DiD, see
+    01_generate_data.py's module docstring, so this now checks for
+    exactly 2 distinct values in value_col instead.)"""
     context = "DiD dataset"
-    require_columns(df, [tier_col], context=context)
-    require_no_nulls(df, [tier_col], context=context)
+    require_columns(df, [value_col], context=context)
+    require_no_nulls(df, [value_col], context=context)
     require_row_count(df, min_rows=100, context=context)
 
-    n_tiers = df[tier_col].nunique()
-    if n_tiers != expected_tiers:
+    n_groups = df[value_col].nunique()
+    if n_groups != expected_groups:
         raise ValidationError(
-            f"{context}: expected exactly {expected_tiers} value tiers, "
-            f"found {n_tiers} distinct value(s) in '{tier_col}': "
-            f"{sorted(df[tier_col].unique().tolist())}."
+            f"{context}: expected exactly {expected_groups} value groups, "
+            f"found {n_groups} distinct value(s) in '{value_col}': "
+            f"{sorted(df[value_col].unique().tolist())}."
         )
 
 

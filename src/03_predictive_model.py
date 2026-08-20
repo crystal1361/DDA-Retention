@@ -120,7 +120,7 @@ def main():
     fig.savefig(os.path.join(FIG_DIR, "feature_importance.png"), dpi=150)
     plt.close(fig)
 
-    scores_df = df.loc[idx_test, ["account_id", "region_id", "value_score", "churn_mode"]].copy()
+    scores_df = df.loc[idx_test, ["account_id", "region_id", "value_score", "value_group", "churn_mode"]].copy()
     for i, c in enumerate(CLASSES):
         scores_df[f"proba_{c}"] = y_proba[:, i]
     scores_df["predicted_mode"] = [CLASSES[i] for i in y_pred]

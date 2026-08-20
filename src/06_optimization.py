@@ -4,23 +4,29 @@
 Replaces the real project's informal "intervene on the top 50% by value_score"
 cutoff with a formal budget-constrained assignment: given each account's
 predicted churn-mode probabilities (03_predictive_model.py) and the CAUSAL
-effect sizes recovered for all three interventions (RDD -> RM contact,
-DiD -> $100 DD offer, DoubleML -> dormant re-engagement), choose which
-accounts get which intervention to maximize total expected dollars of
-deposits protected, subject to:
+effect sizes recovered for all four interventions (RDD -> RM contact,
+DiD -> $100 DD offer [HV only], randomized holdout RCT -> dormant cashback
+[HV only] / dormant SMS [LV only]), choose which accounts get which
+intervention to maximize total expected dollars of deposits protected,
+subject to:
   - a total retention budget
   - a cap on RM contacts (the scarcest resource -- RM time, not money)
   - at most one intervention per account
 
+Four intervention keys, not three: the dormant play is now two DIFFERENT
+plays (cashback for HV, SMS for LV -- see 07_dormant_rct.py), each with its
+own effect size, cost, and tier eligibility, so they're modeled as two
+separate decision variables rather than one "dormant" variable averaged
+across a heterogeneous population.
+
 Every effect size that feeds this optimization is labeled with WHERE it came
-from and how much to trust it (see CONFIDENCE below) -- RDD and DiD are
-design-based (their identifying assumptions were checked in
-02_validate_design.py), the dormant effect is DoubleML/selection-on-
-observables (07_doubleml_dormant.py), which is real evidence but resting on
-an assumption (unconfoundedness) that can't be tested the way RDD/DiD's can.
-Mixing confidence tiers into one optimization without labeling them would be
-the same mistake the value_score redesign fixed elsewhere in this project:
-silently treating different kinds of numbers as if they were interchangeable.
+from and how much to trust it (see CONFIDENCE below). All four are now
+design-based: RDD and DiD's identifying assumptions were checked in
+02_validate_design.py (no-manipulation, parallel pre-trends), and the
+dormant plays are genuine randomized holdouts (07_dormant_rct.py) whose
+randomization balance was also checked in 02_validate_design.py -- unlike
+the project's earlier DoubleML version of this play, none of the four
+effect sizes here rest on an untestable selection-on-observables assumption.
 
 PRODUCTION-READINESS NOTE: this script used to be a flat, top-level script --
 loading it (e.g. `import` it, or run it under pytest) executed the ENTIRE
@@ -78,31 +84,47 @@ def run_optimization(budget=BUDGET, rm_capacity=RM_CAPACITY, cost=None,
         rdd = json.load(f)
     with open(os.path.join(out_dir, "did_summary.json")) as f:
         did = json.load(f)
-    with open(os.path.join(out_dir, "doubleml_summary.json")) as f:
-        dml = json.load(f)
+    with open(os.path.join(out_dir, "dormant_summary.json")) as f:
+        dormant = json.load(f)
 
     effect_pp = {
-        "large_withdrawal": abs(rdd["rdd_robust_coef"]),          # ~0.107, RDD-validated
-        "dd_stop": abs(did["clean_control_overall_att"]),          # ~0.037, clean-control DiD-validated
-        "dormant": abs(dml["doubleml_att"]),                       # ~0.066, DoubleML-validated (weaker design)
+        "large_withdrawal": abs(rdd["rdd_robust_coef"]),                    # ~0.08, RDD-validated (HV only)
+        "dd_stop": abs(did["did_regression_coef"]),                         # ~0.058, 2x2 DiD-validated (HV only)
+        "dormant_cashback": abs(dormant["hv_cashback"]["diff"]),            # ~0.108, randomized holdout (HV only)
+        "dormant_sms": abs(dormant["lv_sms"]["diff"]),                      # ~0.058, randomized holdout (LV only)
     }
     effect_source = {
-        "large_withdrawal": "RDD (rdrobust, robust CI)",
-        "dd_stop": "clean-control (stacked) DiD",
-        "dormant": "DoubleML (IRM, selection-on-observables)",
+        "large_withdrawal": "Sharp RDD (rdrobust, robust CI)",
+        "dd_stop": "2x2 DiD (HV vs. LV, regression-based)",
+        "dormant_cashback": "Randomized holdout RCT (HV tier, cashback offer)",
+        "dormant_sms": "Randomized holdout RCT (LV tier, SMS reminder)",
     }
-    # Confidence tier is tracked SEPARATELY from the point estimate -- both get
-    # used in the optimization objective (a point estimate has to be used to
-    # compute a number either way), but the tier is what 08_business_impact.py
-    # leans on when deciding which results to recommend acting on immediately
-    # vs. piloting further before scaling.
+    # Every effect size here is now design-based (RDD / DiD / randomized
+    # holdout), each with its own identifying assumption checked in
+    # 02_validate_design.py (no-manipulation, parallel pre-trends,
+    # randomization balance) -- there is no longer a lower-confidence tier
+    # to flag the way the old DoubleML-based dormant estimate needed. This
+    # dict is kept (rather than deleted) so 08_business_impact.py and the
+    # deck still have one place to state, per intervention, WHY it's trusted.
     confidence = {
         "large_withdrawal": "high -- design-based (RDD), no-manipulation assumption checked",
         "dd_stop": "high -- design-based (DiD), parallel pre-trends checked",
-        "dormant": "moderate -- selection-on-observables (DoubleML); unconfoundedness "
-                   "assumption is NOT directly testable from the data, unlike the other two",
+        "dormant_cashback": "high -- randomized within-tier holdout, balance checked",
+        "dormant_sms": "high -- randomized within-tier holdout, balance checked",
     }
     interventions = list(effect_pp.keys())
+    # RDD and DiD are themselves restricted to the HV population by design
+    # (see 04_rdd_analysis.py / 01_generate_data.py); the dormant plays are
+    # tier-restricted here explicitly since one predicted risk mode
+    # ("dormant") maps to two DIFFERENT plays depending on account tier.
+    PROBA_COL = {"large_withdrawal": "proba_large_withdrawal", "dd_stop": "proba_dd_stop",
+                 "dormant_cashback": "proba_dormant", "dormant_sms": "proba_dormant"}
+    ELIGIBLE = {
+        "large_withdrawal": lambda s: pd.Series(True, index=s.index),
+        "dd_stop": lambda s: pd.Series(True, index=s.index),
+        "dormant_cashback": lambda s: s["value_group"] == "high",
+        "dormant_sms": lambda s: s["value_group"] == "low",
+    }
 
     try:
         validate_optimization_inputs(effect_pp, effect_source, cost,
@@ -127,20 +149,26 @@ def run_optimization(budget=BUDGET, rm_capacity=RM_CAPACITY, cost=None,
     scores["dollar_value_at_risk"] = scores["value_score"]
 
     # expected value protected, per account, per candidate intervention:
-    # P(that churn mode) * effect_size(pp) * dollar_value_at_risk
+    # P(that churn mode) * effect_size(pp) * dollar_value_at_risk, zeroed
+    # out for accounts outside that intervention's tier eligibility (e.g.
+    # dormant_cashback's EV is 0 for LV accounts -- they can only ever be
+    # candidates for dormant_sms).
+    eligible_mask = {k: ELIGIBLE[k](scores) for k in interventions}
     for k in interventions:
-        scores[f"ev_{k}"] = scores[f"proba_{k}"] * effect_pp[k] * scores["dollar_value_at_risk"]
+        proba = scores[PROBA_COL[k]]
+        scores[f"ev_{k}"] = np.where(eligible_mask[k], proba * effect_pp[k] * scores["dollar_value_at_risk"], 0.0)
         scores[f"net_{k}"] = scores[f"ev_{k}"] - cost[k]
 
     # -------------------------------------------------------------------
-    # Candidate filtering: only worth modeling as a decision variable if the
-    # raw EV is positive AND the predicted probability clears a small floor
-    # -- keeps the ILP a reasonable size without changing the optimal answer
-    # (accounts below the floor would never be selected anyway)
+    # Candidate filtering: only worth modeling as a decision variable if
+    # it's tier-eligible, the raw EV is positive, AND the predicted
+    # probability clears a small floor -- keeps the ILP a reasonable size
+    # without changing the optimal answer (accounts below the floor would
+    # never be selected anyway)
     # -------------------------------------------------------------------
     candidates = []
     for k in interventions:
-        sub = scores[(scores[f"proba_{k}"] > CANDIDATE_MIN_PROBA) &
+        sub = scores[eligible_mask[k] & (scores[PROBA_COL[k]] > CANDIDATE_MIN_PROBA) &
                       (scores[f"net_{k}"] > -cost[k])].copy()
         sub["intervention"] = k
         sub["ev"] = sub[f"ev_{k}"]
@@ -204,12 +232,22 @@ def run_optimization(budget=BUDGET, rm_capacity=RM_CAPACITY, cost=None,
     # that top-50% pool, only on value, which is exactly what the optimizer
     # fixes.
     # -------------------------------------------------------------------
+    # NOTE: the risk-mode argmax is over the THREE underlying predicted churn
+    # modes (large_withdrawal / dd_stop / dormant), not the four intervention
+    # keys -- "dormant" as a predicted mode still has to be translated into
+    # whichever of the two dormant PLAYS (cashback vs. SMS) this account's
+    # tier is eligible for, exactly like the optimizer's own eligibility
+    # rule above.
     scores["value_rank_pct"] = scores["value_score"].rank(pct=True)
-    risk_cols = [f"proba_{k}" for k in interventions]
+    risk_cols = ["proba_large_withdrawal", "proba_dd_stop", "proba_dormant"]
     scores["predicted_risk_mode"] = scores[risk_cols].idxmax(axis=1).str.replace("proba_", "", regex=False)
 
     heuristic_pool = scores[scores["value_rank_pct"] >= 0.50].copy()
-    heuristic_pool["intervention"] = heuristic_pool["predicted_risk_mode"]
+    heuristic_pool["intervention"] = np.where(
+        heuristic_pool["predicted_risk_mode"] != "dormant",
+        heuristic_pool["predicted_risk_mode"],
+        np.where(heuristic_pool["value_group"] == "high", "dormant_cashback", "dormant_sms"),
+    )
     heuristic_pool["cost"] = heuristic_pool["intervention"].map(cost)
     heuristic_pool["ev"] = heuristic_pool.apply(lambda r: r[f"ev_{r['intervention']}"], axis=1)
     heuristic_pool["net"] = heuristic_pool["ev"] - heuristic_pool["cost"]

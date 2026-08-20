@@ -20,9 +20,15 @@ Two things this script deliberately does NOT do, on purpose:
    impact is reported PER 10,000 SCORED ACCOUNTS with an explicit, honest
    scaling instruction -- so it's actually usable ("multiply by your real
    book size / 10,000") without pretending to know a number it doesn't.
-2. It does not treat all three effect sizes as equally trustworthy just
-   because they all feed the same optimization objective. Recommendations
-   are explicitly tiered by the CONFIDENCE labels set in 06_optimization.py.
+2. It does not treat effect sizes as equally trustworthy just by fiat --
+   recommendations still carry the CONFIDENCE labels set in
+   06_optimization.py, even though (after the redesign to a randomized
+   holdout for the dormant play -- see 07_dormant_rct.py) all four are now
+   design-based, high-confidence estimates. Keeping the confidence field on
+   every recommendation is itself the discipline worth demonstrating: it's
+   not there because one effect is weak this time, it's there because a
+   Decision Analytics deliverable should always show its work on WHY a
+   number is trustworthy, not just assert that it is.
 """
 
 import json
@@ -171,31 +177,35 @@ def build_recommendations(headline):
         },
         {
             "priority": 3,
-            "action": "When evaluating the $100 DD-stop offer's rollout, do not "
-                      "judge it on early results.",
-            "why": "The effect ramps in over roughly 3 months after each wave goes "
-                   "live (event-study finding) -- evaluating a wave's impact in "
-                   "month 1 will understate its true effect and could kill a "
-                   "program that's actually working.",
-            "confidence": effect_inputs["dd_stop"]["confidence"],
-            "next_step": "Set the earliest formal evaluation checkpoint for each "
-                         "rollout wave at 3+ months post-launch, not at launch+1.",
+            "action": "Scale the dormant/re-engagement plays (HV cashback offer, "
+                      "LV SMS reminder) to the full flagged population -- this is "
+                      "no longer a pilot-first recommendation.",
+            "why": f"Both plays were tested with a genuine randomized holdout "
+                   f"within each tier ({effect_inputs['dormant_cashback']['source']}; "
+                   f"{effect_inputs['dormant_sms']['source']}), not an observational "
+                   f"comparison -- the HV cashback play alone is the single largest "
+                   f"contributor to the optimizer's total net value protected. "
+                   "Randomization means treated vs. holdout is a clean causal "
+                   "comparison by construction; 02_validate_design.py additionally "
+                   "confirms the two arms were balanced on observed covariates "
+                   "before the offer went out.",
+            "confidence": effect_inputs["dormant_cashback"]["confidence"],
+            "next_step": "Keep a small (~10%) permanent randomized holdout in "
+                         "production even after scaling -- not to re-litigate whether "
+                         "the play works, but to keep a live, up-to-date effect size "
+                         "as take-up and the account mix drift over time.",
         },
         {
             "priority": 4,
-            "action": "Do NOT scale retention budget into the dormant/re-engagement "
-                      "play based on this project's number alone.",
-            "why": "It's the only one of the three effects estimated without a "
-                   "design-based (testable) identifying assumption -- DoubleML's "
-                   "validity rests on 'we observed every important confounder', "
-                   "which can't be verified from the data the way RDD/DiD's "
-                   "assumptions were.",
-            "confidence": effect_inputs["dormant"]["confidence"],
-            "next_step": "Run a genuine randomized pilot (even a small one, "
-                         "e.g. 500 flagged accounts split 50/50) specifically for "
-                         "this play before committing meaningful budget -- this is "
-                         "the one play where a real experiment is both feasible and "
-                         "would meaningfully upgrade confidence.",
+            "action": "When evaluating the $100 DD-stop offer's rollout, do not "
+                      "judge it on early results.",
+            "why": "The effect ramps in over roughly 3 months after the offer goes "
+                   "live for HV accounts (event-study finding) -- evaluating impact "
+                   "in month 1 will understate its true effect and could kill a "
+                   "program that's actually working.",
+            "confidence": effect_inputs["dd_stop"]["confidence"],
+            "next_step": "Set the earliest formal evaluation checkpoint at 3+ months "
+                         "post-launch, not at launch+1.",
         },
     ]
     return recommendations

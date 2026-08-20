@@ -71,6 +71,7 @@ class HealthResponse(BaseModel):
 class AccountScore(BaseModel):
     account_id: str
     value_score: float
+    value_group: str
     proba_none: float
     proba_large_withdrawal: float
     proba_dd_stop: float
@@ -171,6 +172,7 @@ def get_account_score(account_id: str):
     return AccountScore(
         account_id=r["account_id"],
         value_score=float(r["value_score"]),
+        value_group=str(r["value_group"]),
         proba_none=float(r["proba_none"]),
         proba_large_withdrawal=float(r["proba_large_withdrawal"]),
         proba_dd_stop=float(r["proba_dd_stop"]),

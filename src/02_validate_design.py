@@ -15,11 +15,17 @@ validation... gap").
    manipulation, so this should come back clean -- but the point is having
    the check, not the result.
 
-2. DiD parallel-trends check: restricting to account-months where no
-   region's offer is live yet, do the four cohorts move together over
-   calendar time? If they don't, DiD's core identifying assumption
-   (untreated cohorts trace out what treated cohorts WOULD have done absent
-   treatment) is violated.
+2. DiD parallel-trends check: restricting to the pre-launch period (before
+   the offer goes live for HV accounts), do HV and LV accounts move
+   together over calendar time? If they don't, DiD's core identifying
+   assumption (the untreated group traces out what the treated group
+   WOULD have done absent treatment) is violated.
+
+3. Dormant RCT randomization-balance check: within each value tier, do
+   treated and holdout accounts look statistically similar on observed
+   covariates BEFORE any offer went out? This is the standard "Table 1"
+   check any RCT write-up would run -- if randomization worked, treated
+   and holdout should differ only by chance, not systematically.
 """
 
 import math
@@ -28,12 +34,13 @@ import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.stats.anova import anova_lm
+from scipy import stats
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import os
 
-from config import DATA_DIR, FIG_DIR, RDD_CUTOFF
+from config import DATA_DIR, FIG_DIR, RDD_CUTOFF, DID_LAUNCH_MONTH
 from logging_setup import get_logger
 
 logger = get_logger(__name__)
@@ -126,56 +133,87 @@ def run_rdd_validation():
 
 
 # ---------------------------------------------------------------------------
-# 2) DiD parallel pre-trends check
+# 2) DiD parallel pre-trends check (2-group HV vs. LV, single launch date)
 # ---------------------------------------------------------------------------
 def run_did_pretrends_check():
     did_df = pd.read_csv(os.path.join(DATA_DIR, "did_data.csv"))
-    pre = did_df[did_df["offer_live"] == 0].copy()
+    pre = did_df[did_df["event_month"] < DID_LAUNCH_MONTH].copy()
 
-    # visual check: churn-after-DD-stop rate by cohort x calendar month,
-    # restricted to periods before ANY cohort in the plot has gone live
-    agg = (pre.groupby(["cohort", "event_month"])["churned_within_window"]
+    # visual check: churn rate by value-group x calendar month, restricted
+    # to the pre-launch period only (neither group has been treated yet).
+    agg = (pre.groupby(["value_group", "event_month"])["churned_within_window"]
            .mean().reset_index())
 
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
-    for cohort, g in agg.groupby("cohort"):
+    for grp, color in [("high", "#C1613C"), ("low", "#2C4870")]:
+        g = agg[agg.value_group == grp]
         ax.plot(g["event_month"], g["churned_within_window"], marker="o",
-                markersize=3, linewidth=1.3, label=cohort)
-    ax.axvline(8, color="gray", linestyle=":", linewidth=1, label="cohort A adopts (m8)")
-    ax.set_xlabel("Calendar month")
-    ax.set_ylabel("Churn-within-window rate (pre-adoption obs only)")
-    ax.set_title("Parallel pre-trends check across rollout cohorts")
-    ax.legend(fontsize=7, ncol=2)
+                markersize=4, linewidth=1.5, color=color, label=grp)
+    ax.set_xlabel("Calendar month (pre-launch only)")
+    ax.set_ylabel("Churn-within-window rate")
+    ax.set_title("Parallel pre-trends check: HV vs. LV, before the offer launches")
+    ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "did_pretrends_check.png"), dpi=150)
     plt.close(fig)
 
-    # formal test: does adding cohort x event_month interactions improve fit
-    # over a model with only additive cohort + event_month effects? Restricted
-    # to the COMMON window before any cohort has gone live (event_month < 8),
-    # so every cohort contributes data over the same calendar range -- doing
-    # this on the full "not yet treated" sample is unfair, since cohort A's
-    # pre-period only spans months 0-7 while "never" spans 0-23, and that
-    # unequal support alone can produce a spurious interaction.
-    common_pre = pre[pre["event_month"] < 8]
-    restricted = smf.ols("churned_within_window ~ event_month + C(cohort)", data=common_pre).fit()
-    full = smf.ols("churned_within_window ~ event_month * C(cohort)", data=common_pre).fit()
+    # formal test: does adding a value_group x event_month interaction
+    # improve fit over a model with only additive value_group + event_month
+    # effects, in the pre-launch window? A significant interaction would
+    # mean the two groups' trends aren't actually parallel pre-launch --
+    # i.e. DiD's core identifying assumption would be in doubt.
+    restricted = smf.ols("churned_within_window ~ event_month + C(value_group)", data=pre).fit()
+    full = smf.ols("churned_within_window ~ event_month * C(value_group)", data=pre).fit()
     aov = anova_lm(restricted, full)
     f_stat = aov["F"].iloc[1]
     p_val = aov["Pr(>F)"].iloc[1]
 
-    print("=== DiD parallel pre-trends check ===")
-    print(f"F-test on cohort x event_month interaction (pre-period only): F={f_stat:.3f}, p={p_val:.3f}")
+    print("=== DiD parallel pre-trends check (HV vs. LV, pre-launch only) ===")
+    print(f"F-test on value_group x event_month interaction: F={f_stat:.3f}, p={p_val:.3f}")
     verdict = "PASS (no evidence of differential pre-trends)" if p_val > 0.10 else "FLAG (pre-trends differ -- investigate)"
     print(f"verdict: {verdict}\n")
 
     return {"f_stat": f_stat, "p_value": p_val}
 
 
+# ---------------------------------------------------------------------------
+# 3) Dormant RCT randomization-balance check ("Table 1")
+# ---------------------------------------------------------------------------
+def run_dormant_balance_check():
+    dormant_df = pd.read_csv(os.path.join(DATA_DIR, "dormant_data.csv"))
+    covariates = ["engagement_score", "dormancy_streak_months", "product_count",
+                  "tenure_months", "balance"]
+
+    print("=== Dormant RCT randomization-balance check ('Table 1') ===")
+    rows = []
+    for tier in ["high", "low"]:
+        tier_df = dormant_df[dormant_df.value_group == tier]
+        treated = tier_df[tier_df.treated == 1]
+        holdout = tier_df[tier_df.treated == 0]
+        print(f"\n-- {tier.upper()} tier (n_treated={len(treated)}, n_holdout={len(holdout)}) --")
+        for cov in covariates:
+            t_mean, h_mean = treated[cov].mean(), holdout[cov].mean()
+            t_stat, p_val = stats.ttest_ind(treated[cov], holdout[cov], equal_var=False)
+            flag = "" if p_val > 0.05 else "  <- FLAG"
+            print(f"  {cov:<24s} treated={t_mean:>9.2f}  holdout={h_mean:>9.2f}  "
+                  f"t={t_stat:+.2f}  p={p_val:.3f}{flag}")
+            rows.append({"tier": tier, "covariate": cov, "treated_mean": t_mean,
+                         "holdout_mean": h_mean, "t_stat": t_stat, "p_value": p_val})
+    n_flagged = sum(1 for r in rows if r["p_value"] <= 0.05)
+    print(f"\n{n_flagged}/{len(rows)} covariate balance tests flagged at p<=0.05 "
+          f"(with alpha=0.05 and {len(rows)} tests, ~{0.05*len(rows):.1f} false "
+          f"positives are expected by chance alone even under perfect randomization).")
+    verdict = "PASS (randomization balance looks clean)" if n_flagged <= max(1, round(0.05 * len(rows)) + 1) \
+        else "FLAG (more imbalance than chance alone would predict -- investigate)"
+    print(f"verdict: {verdict}\n")
+    return pd.DataFrame(rows)
+
+
 if __name__ == "__main__":
     logger.info("02_validate_design: starting design validation checks")
     rdd_result = run_rdd_validation()
     did_result = run_did_pretrends_check()
+    balance_df = run_dormant_balance_check()
     print("Figures saved to figures/rdd_density_check.png and figures/did_pretrends_check.png")
     logger.info("02_validate_design: McCrary p=%.3f, pre-trends F-test p=%.3f",
                 rdd_result["p_value"], did_result["p_value"])
