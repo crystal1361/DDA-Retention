@@ -70,13 +70,48 @@ def test_xgb_n_jobs_pinned_to_one_for_determinism():
     # guaranteed bit-identical across runs even with a fixed random_state,
     # because histogram gradient summation isn't perfectly associative
     # across threads. n_jobs=1 is the fix, and it needs to actually be
-    # wired into both hyperparameter dicts that feed XGBoost, not just
+    # wired into the hyperparameter dict that feeds XGBoost, not just
     # exist as an unused constant.
     assert config.XGB_N_JOBS == 1
     assert config.PREDICTIVE_MODEL_PARAMS["n_jobs"] == 1
-    assert config.DOUBLEML_XGB_PARAMS["n_jobs"] == 1
 
 
 def test_paths_exist_after_import():
     for d in (config.DATA_DIR, config.FIG_DIR, config.OUT_DIR, config.LOG_DIR):
         assert os.path.isdir(d)
+
+
+def test_hv_value_percentile_is_a_50_50_split():
+    # The same HV/LV split feeds RDD, DiD, and the dormant RCT (see
+    # config.py's docstring) -- it's supposed to be exactly 0.50, a
+    # business (ROI) choice, not a statistically-tuned number.
+    assert config.HV_VALUE_PERCENTILE == 0.50
+
+
+def test_did_launch_month_within_the_24_month_window():
+    assert 0 < config.DID_LAUNCH_MONTH < 24
+
+
+def test_dormant_holdout_frac_is_small_but_positive():
+    # Small enough to not waste much value on the holdout, but strictly
+    # positive -- a 0% holdout wouldn't be a randomized experiment at all.
+    assert 0 < config.DORMANT_HOLDOUT_FRAC < 0.5
+
+
+def test_intervention_cost_has_split_dormant_keys_not_a_single_dormant_key():
+    # The dormant play was redesigned into two tier-specific plays
+    # (cashback for HV, SMS for LV) -- the old single "dormant" cost key
+    # should be gone, replaced by both new keys.
+    assert "dormant" not in config.INTERVENTION_COST
+    assert "dormant_cashback" in config.INTERVENTION_COST
+    assert "dormant_sms" in config.INTERVENTION_COST
+    assert config.INTERVENTION_COST["dormant_sms"] < config.INTERVENTION_COST["dormant_cashback"]
+
+
+def test_doubleml_constants_removed():
+    # DoubleML was replaced by a randomized-holdout RCT for the dormant
+    # play (see 07_dormant_rct.py) -- these constants should no longer
+    # exist in config.py at all.
+    assert not hasattr(config, "DOUBLEML_XGB_PARAMS")
+    assert not hasattr(config, "DOUBLEML_N_FOLDS")
+    assert not hasattr(config, "DOUBLEML_N_REP")

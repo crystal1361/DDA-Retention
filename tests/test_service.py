@@ -42,6 +42,7 @@ def test_score_lookup_for_real_account_succeeds():
     body = r.json()
     assert body["account_id"] == account_id
     assert 0.0 <= body["proba_none"] <= 1.0
+    assert body["value_group"] in ("high", "low")
 
 
 def test_score_lookup_for_missing_account_404s_not_500s():

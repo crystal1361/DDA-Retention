@@ -89,15 +89,15 @@ def test_validate_rdd_data_raises_on_fuzzy_violation():
         validate_rdd_data(df, cutoff=30.0, treatment_col="treated_rm_contact")
 
 
-def test_validate_did_data_raises_on_wrong_tier_count():
-    df = pd.DataFrame({"value_tier": ["a", "b", "a", "b"] * 30})
-    with pytest.raises(ValidationError, match="value tiers"):
-        validate_did_data(df, tier_col="value_tier", expected_tiers=4)
+def test_validate_did_data_raises_on_wrong_group_count():
+    df = pd.DataFrame({"value_group": ["a", "b", "c", "d"] * 30})
+    with pytest.raises(ValidationError, match="value groups"):
+        validate_did_data(df, value_col="value_group", expected_groups=2)
 
 
-def test_validate_did_data_passes_with_four_tiers():
-    df = pd.DataFrame({"value_tier": ["t1", "t2", "t3", "t4"] * 30})
-    validate_did_data(df, tier_col="value_tier", expected_tiers=4)
+def test_validate_did_data_passes_with_two_groups():
+    df = pd.DataFrame({"value_group": ["high", "low", "high", "low"] * 30})
+    validate_did_data(df, value_col="value_group", expected_groups=2)
 
 
 def test_validate_dormant_data_raises_on_positivity_violation():

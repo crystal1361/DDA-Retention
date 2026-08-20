@@ -24,6 +24,7 @@ def _write_synthetic_inputs(tmp_path, n=200):
     scores = pd.DataFrame({
         "account_id": [f"A{i:04d}" for i in range(n)],
         "value_score": [1000.0 + 10 * i for i in range(n)],
+        "value_group": ["high" if i % 2 == 0 else "low" for i in range(n)],
         "proba_large_withdrawal": [0.5 if i % 10 == 0 else 0.001 for i in range(n)],
         "proba_dd_stop": [0.5 if i % 10 == 1 else 0.001 for i in range(n)],
         "proba_dormant": [0.5 if i % 10 == 2 else 0.001 for i in range(n)],
@@ -33,9 +34,9 @@ def _write_synthetic_inputs(tmp_path, n=200):
     with open(tmp_path / "rdd_summary.json", "w") as f:
         json.dump({"rdd_robust_coef": -0.10}, f)
     with open(tmp_path / "did_summary.json", "w") as f:
-        json.dump({"clean_control_overall_att": -0.04}, f)
-    with open(tmp_path / "doubleml_summary.json", "w") as f:
-        json.dump({"doubleml_att": -0.06}, f)
+        json.dump({"did_regression_coef": -0.04}, f)
+    with open(tmp_path / "dormant_summary.json", "w") as f:
+        json.dump({"hv_cashback": {"diff": -0.06}, "lv_sms": {"diff": -0.03}}, f)
 
 
 def test_run_optimization_respects_budget_constraint(tmp_path):
@@ -83,6 +84,26 @@ def test_run_optimization_raises_on_inconsistent_cost_dict(tmp_path):
     from validation import ValidationError
     with pytest.raises(ValidationError):
         opt_module.run_optimization(
-            budget=500, rm_capacity=50, cost={"large_withdrawal": 75},  # missing dd_stop/dormant
+            budget=500, rm_capacity=50, cost={"large_withdrawal": 75},  # missing dd_stop/dormant_cashback/dormant_sms
             out_dir=str(tmp_path), fig_dir=str(tmp_path), save=False,
         )
+
+
+def test_run_optimization_dormant_candidates_respect_tier_eligibility(tmp_path):
+    # dormant_cashback should only ever be selected for "high"-tier accounts,
+    # dormant_sms only for "low"-tier accounts -- the eligibility split is
+    # the whole point of splitting the old single "dormant" intervention
+    # into two tier-specific ones (see 06_optimization.py's ELIGIBLE dict).
+    _write_synthetic_inputs(tmp_path)
+    result = opt_module.run_optimization(
+        budget=1_000_000, rm_capacity=1_000_000,
+        out_dir=str(tmp_path), fig_dir=str(tmp_path), save=False,
+    )
+    candidates = result["candidates"]
+    scores = pd.read_csv(tmp_path / "predictive_scores.csv")
+    tier_map = scores.set_index("account_id")["value_group"]
+
+    cashback = candidates[candidates.intervention == "dormant_cashback"]
+    sms = candidates[candidates.intervention == "dormant_sms"]
+    assert (cashback["account_id"].map(tier_map) == "high").all()
+    assert (sms["account_id"].map(tier_map) == "low").all()
