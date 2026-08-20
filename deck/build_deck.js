@@ -289,23 +289,30 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "RDD — Design & Validation");
-  slideTitle(s, "The identifying assumption: no one can “game” the 30% line");
+  slideTitle(s, "The identifying assumption: the running variable isn't manipulated");
   pageNum(s, 7);
 
   s.addImage({ path: FIG("rdd_density_check.png"), x: 0.6, y: 2.15, w: 7.0, h: 4.7 });
   s.addText("McCrary-style density test", { x: 7.9, y: 2.3, w: 4.8, h: 0.4, fontFace: FONT_HEAD, fontSize: 15, bold: true, color: NAVY, margin: 0 });
-  s.addText("If customers could nudge a withdrawal just above/below 30% to trigger or dodge an RM call, "
-    + "the density of the running variable would jump at the cutoff — and RDD would be invalid.", {
-    x: 7.9, y: 2.75, w: 4.8, h: 1.3, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
+  s.addText("Customers don't know this internal 30% threshold exists, so deliberate dodging isn't the "
+    + "realistic risk — the real risk is any OTHER unknown reason withdrawal size might bunch near 30% "
+    + "(round-number withdrawal habits, an unrelated internal rule). This test checks for that directly "
+    + "instead of just asserting it away.", {
+    x: 7.9, y: 2.75, w: 4.8, h: 1.5, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.2,
   });
-  statCard(s, 7.9, 4.2, 4.8, 1.0, "p = 0.151", "Local log-density jump at cutoff (bootstrap test)", { valueSize: 24 });
-  s.addText("No evidence of manipulation — withdrawal size is a real economic behavior, not something dialed "
-    + "in to dodge a phone call.", {
-    x: 7.9, y: 5.35, w: 4.8, h: 1.3, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
+  statCard(s, 7.9, 4.45, 4.8, 1.0, "p = 0.151", "Local log-density jump at cutoff (bootstrap test)", { valueSize: 24 });
+  s.addText("No jump in the density at 30% — consistent with a smooth, unmanipulated running variable.", {
+    x: 7.9, y: 5.6, w: 4.8, h: 1.0, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
   });
   s.addNotes(
-    "This check matters because RDD's validity hinges entirely on people not being able to precisely manipulate "
-    + "which side of the cutoff they land on. I run this BEFORE trusting any effect estimate."
+    "If asked 'why check this at all, customers don't know the 30% rule exists' — that's exactly right, and it's "
+    + "why I don't expect INTENTIONAL gaming. But the McCrary test isn't only a test for intentional gaming; it's "
+    + "a general smoothness check on the running variable's density, which would also catch unrelated sources of "
+    + "bunching (e.g. round-number withdrawal amounts, or some other bank rule that happens to also trigger near "
+    + "30%) that could bias the comparison even without anyone trying to dodge OUR rule specifically. It's also "
+    + "the standard, expected validation step for any RDD -- skipping it is what would actually raise questions, "
+    + "and it's specifically what lets this method carry a 'high confidence, directly tested' label instead of "
+    + "DoubleML's 'moderate confidence, untestable assumption' label a few slides later."
   );
 }
 
@@ -313,7 +320,7 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "RDD — Result");
-  slideTitle(s, "RM outreach cuts next-month churn by ~11 points at the margin");
+  slideTitle(s, "RM outreach cuts 60-day churn by ~11 points at the margin");
   pageNum(s, 8);
 
   s.addImage({ path: FIG("rdd_effect_plot.png"), x: 0.6, y: 2.15, w: 7.5, h: 4.75 });
