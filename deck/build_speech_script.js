@@ -25,7 +25,7 @@ children.push(
     spacing: { after: 40 },
   }),
   new Paragraph({
-    children: [ new TextRun({ text: "18 slides · target ~19–20 minutes + Q&A · Vanguard, Data Analyst Senior Specialist / Data Scientist — Decision Analytics & Modeling", size: 20, color: "777777" }) ],
+    children: [ new TextRun({ text: "19 core slides + 1 appendix backup · target ~19–20 minutes + Q&A · Vanguard, Data Analyst Senior Specialist / Data Scientist — Decision Analytics & Modeling", size: 20, color: "777777" }) ],
     spacing: { after: 300 },
   }),
 );
@@ -42,11 +42,11 @@ children.push(
     children: [ new TextRun({ text: "A few things worth having ready alongside it, in case the conversation goes deeper than the slides:", size: 22 }) ],
   }),
   ...[
-    "Backup tabs open (but not shown unless asked): the GitHub repo, in case someone wants to see the actual code, not just the results; output/rdd_bandwidth_sensitivity.csv, output/did_cohort_att.csv, and the DoubleML confidence interval (mentioned explicitly in the closing slide's notes as “ready if asked to go deeper”).",
+    "Backup tabs open (but not shown unless asked): the GitHub repo, in case someone wants to see the actual code, not just the results; output/rdd_bandwidth_sensitivity.csv, output/did_summary.json, and output/dormant_summary.json for the full confidence intervals (slide 20, the appendix backup slide, is “ready if asked to go deeper” on the dormant holdout's statistical power specifically).",
     "The bilingual Q&A document (项目二-延伸-RDD-DiD-优化-QA.docx) as your own private crib sheet for follow-up questions — not something you show, something you've internalized.",
     "A PDF export of the deck as a fallback, in case the interviewer's system doesn't render .pptx cleanly, or in case you're not the one driving the screen share.",
-    "Know the five “anchor numbers” cold, without looking at the slide: -10.7pp (RDD), -3.7pp (DiD), -6.5pp (DoubleML), +63.2% / +$116,211 (optimization/business impact), -30% relative (the real A/B test). If you can say these without reading them off the screen, the whole talk reads as fluent rather than recited.",
-    "Practical logistics: test the screen share beforehand, mute notifications, and know how to jump directly to a specific slide number if asked to go back or skip ahead — interviewers often interrupt mid-flow.",
+    "Know the five “anchor numbers” cold, without looking at the slide: -8.3pp (RDD), -5.8pp (DiD), -10.8pp / -5.8pp (dormant RCT, HV cashback / LV SMS), +49.4% / +$133,873 (optimization/business impact), -30% relative (the real A/B test). If you can say these without reading them off the screen, the whole talk reads as fluent rather than recited.",
+    "Practical logistics: test the screen share beforehand, mute notifications, and know how to jump directly to a specific slide number if asked to go back or skip ahead — interviewers often interrupt mid-flow. Slide 20 (appendix) is deliberately NOT part of the normal flow — only jump to it if asked to defend the 90/10 holdout split or derive SE→z→power by hand.",
   ].map(t => new Paragraph({
     numbering: undefined,
     bullet: { level: 0 },
@@ -55,7 +55,7 @@ children.push(
   })),
   new Paragraph({
     spacing: { before: 100, after: 300, line: 300 },
-    children: [ new TextRun({ text: "Pacing target: Title+Situation ~45s, Task/Framing ~60s (don't skip this one), Approach ~50s, Predict ~50s, the six causal-inference slides (6–11) ~5.5 minutes combined, Optimize (12–13) ~1.5 minutes, Business Impact + Recommendations (14–15) ~2 minutes, Tying back + Limitations (16–17) ~2 minutes, Closing ~15 seconds — leaves comfortable room inside a 20-minute slot for the interviewer to interject.", size: 21, italics: true, color: "555555" }) ],
+    children: [ new TextRun({ text: "Pacing target: Title+Situation ~55s, Task/Framing ~75s (don't skip this one), Architecture ~50s, Predict ~40s, the six causal-inference slides (6–12) ~5.5 minutes combined, Optimize (13–14) ~1.5 minutes, Business Impact + Recommendations (15–16) ~1.5 minutes, Tying back + Limitations (17–18) ~1.5 minutes, Closing ~15 seconds — leaves comfortable room inside a 20-minute slot for the interviewer to interject. Slide 20 is backup only and isn't counted in the pacing target.", size: 21, italics: true, color: "555555" }) ],
   }),
 );
 

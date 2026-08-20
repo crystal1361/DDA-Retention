@@ -40,8 +40,8 @@ function lightSlide(pres) {
 
 function kicker(s, text, opts = {}) {
   s.addText(text.toUpperCase(), {
-    x: opts.x ?? 0.6, y: opts.y ?? 0.4, w: opts.w ?? 8, h: 0.35,
-    fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA,
+    x: opts.x ?? 0.6, y: opts.y ?? 0.4, w: opts.w ?? 10, h: 0.35,
+    fontFace: FONT_BODY, fontSize: 12, bold: true, color: opts.color ?? TERRACOTTA,
     charSpacing: 2, margin: 0,
   });
 }
@@ -105,9 +105,9 @@ const pres = newPres();
     x: 0.7, y: 2.05, w: 10.8, h: 2.1, fontFace: FONT_HEAD, fontSize: 40, bold: true,
     color: WHITE, margin: 0, lineSpacingMultiple: 1.08,
   });
-  s.addText("Rebuilding a real DDA retention project with quasi-experimental causal inference "
-    + "(RDD + value-tier DiD + DoubleML) and formal budget optimization, translated into "
-    + "quantified business impact", {
+  s.addText("A decision engine built with quasi-experimental causal inference (sharp RDD, 2-group DiD, and a "
+    + "tier-stratified randomized-holdout RCT) plus formal ILP budget optimization, translated into quantified, "
+    + "actionable business impact", {
     x: 0.7, y: 4.05, w: 10.8, h: 0.9, fontFace: FONT_BODY, fontSize: 15, italic: true,
     color: ICE, margin: 0,
   });
@@ -115,9 +115,10 @@ const pres = newPres();
     x: 0.7, y: 6.55, w: 10, h: 0.4, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0,
   });
   s.addNotes(
-    "Open by framing this as a real project I'm rebuilding to layer in rigor the JD specifically calls for: "
-    + "quasi-experimental causal inference and formal optimization under uncertainty. Say up front that today's "
-    + "data is synthetic (next slide explains why) but the methods and the underlying real project are real."
+    "Open by framing this as a purpose-built demonstration of the analytical engine this JD calls for: causal "
+    + "inference where randomization isn't feasible, plus formal optimization under uncertainty. Say up front "
+    + "that today's data is synthetic (next slide explains why) and that the project is grounded in real DDA "
+    + "retention work I led, but isn't presented as a literal retrofit of that project's original test design."
   );
 }
 
@@ -141,48 +142,50 @@ const pres = newPres();
     y += 1.5;
   });
   s.addNotes(
-    "This is the real situation from my actual project. RMs and the retention team had no forward-looking signal, "
-    + "and the retention motion that did exist wasn't differentiated by WHY someone was at risk."
+    "This is the real situation from my actual DDA retention work. RMs and the retention team had no "
+    + "forward-looking signal, and the retention motion that did exist wasn't differentiated by WHY someone "
+    + "was at risk."
   );
 }
 
 // ============================================================ SLIDE 3: TASK / FRAMING
 {
   const s = lightSlide(pres);
-  kicker(s, "Task — and what you're about to see");
-  slideTitle(s, "Two things layered together: a real project,\nand a rebuild that adds the rigor this role asks for");
+  kicker(s, "Task — how to read what you're about to see");
+  slideTitle(s, "Grounded in a real retention problem;\nbuilt, end to end, to demonstrate this role's engine");
   pageNum(s, 3);
 
   s.addShape("roundRect", {
     x: 0.6, y: 2.2, w: 5.9, h: 4.35, rectRadius: 0.08,
     fill: { color: ICE_TINT }, line: { type: "none" },
   });
-  s.addText("WHAT I ACTUALLY BUILT", { x: 0.95, y: 2.45, w: 5.2, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
+  s.addText("WHAT'S REAL", { x: 0.95, y: 2.45, w: 5.2, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
   s.addText([
-    { text: "Multi-class model predicting HOW an at-risk account would churn (large withdrawal / DD stop / dormant)", options: { bullet: true, breakLine: true } },
-    { text: "Trigger-based interventions, one per churn mode", options: { bullet: true, breakLine: true } },
-    { text: "Validated with a randomized A/B test: 30% relative churn reduction", options: { bullet: true, breakLine: true } },
-    { text: "Gap I owned at the time: validation leaned on the A/B test alone — no quasi-experimental analysis, no formal budget optimization, no quantified business case", options: { bullet: true, breakLine: true } },
+    { text: "The business problem: DDA churn, no early warning, undifferentiated outreach", options: { bullet: true, breakLine: true } },
+    { text: "The three churn triggers (large withdrawal, DD stop, dormancy) and the multi-class predictive layer that routes each account to the right playbook", options: { bullet: true, breakLine: true } },
+    { text: "The retention economics — funded outreach only pencils out above a value cutoff; below it, cheaper touches make more sense (see slide 4)", options: { bullet: true, breakLine: true } },
   ], { x: 0.95, y: 2.9, w: 5.2, h: 3.5, fontFace: FONT_BODY, fontSize: 12.5, color: NAVY, lineSpacingMultiple: 1.15, margin: 0, paraSpaceAfter: 8 });
 
   s.addShape("roundRect", {
     x: 6.8, y: 2.2, w: 5.9, h: 4.35, rectRadius: 0.08,
     fill: { color: NAVY }, line: { type: "none" },
   });
-  s.addText("WHAT I'M WALKING THROUGH TODAY", { x: 7.15, y: 2.45, w: 5.2, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
+  s.addText("WHAT'S PURPOSE-BUILT FOR THIS ROLE", { x: 7.15, y: 2.45, w: 5.2, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
   s.addText([
-    { text: "A rebuild that closes that gap, on my own time, with synthetic data (real account data obviously can't leave the bank)", options: { bullet: true, breakLine: true } },
-    { text: "None of the three triggers were randomized — RDD, a value-tier staggered DiD, and DoubleML (for the one trigger with no exploitable design at all) identify each one's causal effect instead", options: { bullet: true, breakLine: true } },
-    { text: "The old \"top 50% by value\" cutoff becomes a formal budget- and capacity-constrained optimization", options: { bullet: true, breakLine: true } },
-    { text: "Every result is translated into a quantified, confidence-tiered business recommendation — and I know the true effect I built into the data, so I can grade whether my own methods recover it", options: { bullet: true, breakLine: true } },
+    { text: "Everything from here on — the RDD, the DiD, the randomized dormant-play holdout, the ILP optimizer, and the business-impact translation — was designed from scratch on synthetic data (known account data can't leave the bank, or be posted to a public repo)", options: { bullet: true, breakLine: true } },
+    { text: "No extra A/B test was proposed. Instead: for each trigger, the analysis plan was fixed FIRST — which comparison, which population, which test — before ever looking at outcomes, the same discipline as pre-registration", options: { bullet: true, breakLine: true } },
+    { text: "The DD-stop offer and both dormant plays roll out to everyone eligible in-window; only a small randomized holdout is withheld, purely for measurement — nothing is delayed or denied just to run a test", options: { bullet: true, breakLine: true } },
+    { text: "Because the ground truth is injected, every method here can be graded against a known answer before I'd ever trust it on a real decision", options: { bullet: true, breakLine: true } },
   ], { x: 7.15, y: 2.9, w: 5.2, h: 3.5, fontFace: FONT_BODY, fontSize: 12.5, color: WHITE, lineSpacingMultiple: 1.15, margin: 0, paraSpaceAfter: 8 });
 
   s.addNotes(
-    "Be very explicit and upfront here: this is honest framing, not a trick. The real project and its real "
-    + "A/B-tested result are true. Today's code/slides are a demonstration I built to show the additional analytical "
-    + "engine skills this role asks for -- quasi-experimental causal inference, formal optimization, and business "
-    + "translation -- using synthetic data with a KNOWN ground truth so I can validate my own methods before ever "
-    + "trusting them on a real problem."
+    "Be very explicit and upfront here: this is honest framing, not a trick. If asked 'is this the exact project "
+    + "you shipped' -- no, and I don't present it that way. It's a from-scratch analytical engine, built to "
+    + "demonstrate the causal-inference-under-non-randomization plus optimization skillset this JD asks for, using "
+    + "the same real business problem and triggers I actually worked on. The 'analysis plan fixed before looking "
+    + "at outcomes' point matters: it's what separates this from p-hacking a result out of data I already had --  "
+    + "RDD's cutoff, DiD's launch date and comparison groups, and the dormant RCT's holdout design were all "
+    + "decided before computing a single effect size."
   );
 }
 
@@ -190,34 +193,43 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "Approach");
-  slideTitle(s, "The analytical engine: three layers, one decision");
+  slideTitle(s, "One decision engine, four layers — each one earning its place in the final call");
   pageNum(s, 4);
 
   const boxes = [
-    ["1", "PREDICT", "Multi-class model: which churn mode is this account heading toward?", NAVY_MID],
-    ["2", "EXPLAIN (CAUSAL)", "RDD, value-tier DiD, and DoubleML: what's the true effect of each intervention, isolated from confounds — picking the method that fits each trigger's actual structure?", TERRACOTTA],
-    ["3", "OPTIMIZE", "Budget & capacity-constrained ILP: given effects and costs, who gets what, this month?", NAVY_MID],
+    ["1", "PREDICT", "Which churn mode is this account heading toward? Routes each account to the right causal layer.", NAVY_MID],
+    ["2", "EXPLAIN\n(CAUSAL)", "Sharp RDD, 2-group DiD, tier-stratified randomized-holdout RCT: the true effect of each intervention, isolated from confounds.", TERRACOTTA],
+    ["3", "OPTIMIZE", "Budget & capacity-constrained ILP: given real effects and real costs, who gets what, this month?", NAVY_MID],
+    ["4", "ACT", "Tiered, quantified recommendations a stakeholder can approve and a team can execute.", NAVY_MID],
   ];
-  let x = 0.7;
-  const w = 3.85, gap = 0.35;
+  let x = 0.6;
+  const w = 2.92, gap = 0.24;
   boxes.forEach(([num, head, body, color], i) => {
-    s.addShape("roundRect", { x, y: 2.35, w, h: 3.6, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
-    badge(s, x + 0.3, 2.65, 0.55, num, color);
-    s.addText(head, { x: x + 0.3, y: 3.4, w: w - 0.6, h: 0.4, fontFace: FONT_HEAD, fontSize: 16, bold: true, color: NAVY, margin: 0 });
-    s.addText(body, { x: x + 0.3, y: 3.85, w: w - 0.6, h: 1.9, fontFace: FONT_BODY, fontSize: 12.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.2 });
-    if (i < 2) {
-      s.addText("→", { x: x + w + 0.02, y: 3.7, w: gap - 0.04, h: 0.6, fontFace: FONT_BODY, fontSize: 26, bold: true, color: TERRACOTTA, align: "center", margin: 0 });
+    s.addShape("roundRect", { x, y: 2.3, w, h: 3.3, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
+    badge(s, x + 0.25, 2.58, 0.5, num, color);
+    s.addText(head, { x: x + 0.25, y: 3.24, w: w - 0.5, h: 0.55, fontFace: FONT_HEAD, fontSize: 14.5, bold: true, color: NAVY, margin: 0 });
+    s.addText(body, { x: x + 0.25, y: 3.8, w: w - 0.5, h: 1.65, fontFace: FONT_BODY, fontSize: 11, color: MUTED, margin: 0, lineSpacingMultiple: 1.18 });
+    if (i < 3) {
+      s.addText("→", { x: x + w + 0.01, y: 3.6, w: gap - 0.02, h: 0.6, fontFace: FONT_BODY, fontSize: 22, bold: true, color: TERRACOTTA, align: "center", margin: 0 });
     }
     x += w + gap;
   });
-  s.addText("Same structure as the real project (predict → trigger-matched action) — the new layers make the "
-    + "\"why,\" the \"how much to spend,\" and the \"so what for the business\" rigorous instead of assumed.", {
-    x: 0.7, y: 6.15, w: 11.9, h: 0.6, fontFace: FONT_BODY, fontSize: 12.5, italic: true, color: MUTED, margin: 0,
+
+  s.addShape("roundRect", { x: 0.6, y: 5.85, w: 11.9, h: 1.15, rectRadius: 0.07, fill: { color: NAVY }, line: { type: "none" } });
+  s.addText("ONE SPLIT, REUSED EVERYWHERE", { x: 0.9, y: 6.0, w: 3.0, h: 0.85, fontFace: FONT_BODY, fontSize: 11.5, bold: true, color: TERRACOTTA, charSpacing: 1, valign: "middle", margin: 0 });
+  s.addText("RDD's population, DiD's treated/control groups, and both dormant-play RCT arms all use the SAME "
+    + "high-value / low-value account split (top/bottom 50% by account_value) — a business ROI cutoff, not a "
+    + "statistical one (next slide). One reused definition of \"who's worth a funded intervention,\" instead of "
+    + "three separately-justified cutoffs.", {
+    x: 3.95, y: 5.95, w: 8.4, h: 1.0, fontFace: FONT_BODY, fontSize: 11.5, color: WHITE, margin: 0, lineSpacingMultiple: 1.2, valign: "middle",
   });
+
   s.addNotes(
     "This maps directly to the JD language: 'design the analytical engine... how relationships are modeled... how "
-    + "outputs are generated for decision-making.' Predict/Explain/Optimize is that engine; the business-impact "
-    + "layer at the end is what turns the engine's output into something a stakeholder can act on."
+    + "outputs are generated for decision-making.' Predict/Explain/Optimize is that engine; Act is what turns the "
+    + "engine's output into something a stakeholder can approve. The callout at the bottom is deliberate -- it "
+    + "previews that every causal design from here forward shares one reused business split, so it doesn't look "
+    + "like three separately-invented cutoffs when RDD/DiD/dormant each show up."
   );
 }
 
@@ -234,14 +246,15 @@ const pres = newPres();
   statCard(s, 7.55, 3.4, 5.15, 1.1, "2.8x – 3.2x", "Lift at top decile vs. base rate");
   s.addText("Churn is rare (~11% combined across modes) and driven by noisy human behavior — this isn't a "
     + "0.95-AUC problem. In production you rank and act on the top slice your capacity allows, not hard-classify "
-    + "at a single threshold, exactly like the 30%-withdrawal cutoff on the next slides.", {
+    + "at a single threshold, exactly like the causal layer's HV/LV split on the next slides.", {
     x: 7.55, y: 4.75, w: 5.15, h: 2.1, fontFace: FONT_BODY, fontSize: 12.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
   });
   s.addNotes(
     "Engagement, DD stability, and liquidity-need scores dominate, as expected -- and region importance sits at "
     + "noise level, a good sanity check that the model isn't picking up spurious geography effects. I evaluate by "
     + "ranking quality, not hard-classification accuracy, because forcing balanced weights on an 89%-none target "
-    + "produces garbage precision numbers that don't reflect how the model is actually used."
+    + "produces garbage precision numbers that don't reflect how the model is actually used. This layer's job is "
+    + "purely routing: WHICH causal-layer estimate applies to this account."
   );
 }
 
@@ -249,39 +262,48 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "Layer 2 — Explain (Causal)");
-  slideTitle(s, "Three triggers. None of them were randomized.");
+  slideTitle(s, "Three triggers, none of them randomized — one shared value split");
   pageNum(s, 6);
 
+  s.addShape("roundRect", { x: 0.6, y: 2.05, w: 11.9, h: 0.85, rectRadius: 0.06, fill: { color: ICE_TINT }, line: { type: "none" } });
+  s.addText([
+    { text: "Why 50/50 by account value: ", options: { bold: true, color: NAVY } },
+    { text: "a ROI cutoff, not a statistical one — \"for the top half, the deposits and lifetime value protected "
+      + "clearly outweighed the cost; below that the economics got thin,\" so only the top half gets a funded, "
+      + "randomized intervention. Same split, all three rows below.", options: { color: MUTED } },
+  ], { x: 0.85, y: 2.16, w: 11.4, h: 0.65, fontFace: FONT_BODY, fontSize: 11.5, margin: 0, valign: "middle", lineSpacingMultiple: 1.15 });
+
   const rows = [
-    ["Large withdrawal > 30% of balance\n→ RM calls, pitches alternatives",
+    ["Large withdrawal > 30% of balance\n→ RM calls, pitches alternatives (HV only)",
      "Deterministic rule, not a coin flip",
-     "Regression Discontinuity (RDD)",
+     "Sharp Regression Discontinuity (RDD)",
      "Compare accounts just above vs.\njust below the 30% line"],
-    ["Direct deposit stops\n→ $100 offer for 2 new DDs $500+",
-     "Rolled out by customer-value tier — RM capacity is the real constraint, not geography",
-     "Clean-control (stacked) DiD",
-     "Compare not-yet-treated value\ntiers to already-treated tiers"],
-    ["Dormancy signal\n→ re-engagement reminder",
-     "No design at all to exploit — account gets flagged and treated together, no threshold or rollout",
-     "DoubleML (selection-on-observables)",
-     "ML-adjusted comparison,\nconditioning on everything observed"],
+    ["Direct deposit stops\n→ $100 offer for 2 new DDs $500+ (HV only)",
+     "Rolled out to HV accounts on one launch date; LV never gets it in-window",
+     "2-group Difference-in-Differences",
+     "Compare HV's before/after change\nto LV's before/after change"],
+    ["Dormancy signal\n→ cashback offer (HV) / SMS reminder (LV)",
+     "No natural threshold or rollout date — so a small randomized holdout is built into the design itself",
+     "Tier-stratified randomized-holdout RCT",
+     "Compare each tier's treated\naccounts to that tier's own holdout"],
   ];
-  let y = 2.15;
-  const rh = 1.55;
+  let y = 3.05;
+  const rh = 1.32;
   rows.forEach(([trigger, why, method, how]) => {
     s.addShape("roundRect", { x: 0.6, y, w: 11.9, h: rh, rectRadius: 0.07, fill: { color: ICE_TINT }, line: { type: "none" } });
-    s.addText(trigger, { x: 0.9, y: y + 0.14, w: 4.5, h: rh - 0.28, fontFace: FONT_BODY, fontSize: 12.5, bold: true, color: NAVY, margin: 0, lineSpacingMultiple: 1.15, valign: "middle" });
-    s.addText(why, { x: 5.45, y: y + 0.14, w: 2.7, h: rh - 0.28, fontFace: FONT_BODY, fontSize: 10.8, italic: true, color: MUTED, margin: 0, lineSpacingMultiple: 1.18, valign: "middle" });
-    s.addText(method, { x: 8.25, y: y + 0.18, w: 4.05, h: 0.5, fontFace: FONT_HEAD, fontSize: 14, bold: true, color: TERRACOTTA, margin: 0 });
-    s.addText(how, { x: 8.25, y: y + 0.65, w: 4.05, h: 0.85, fontFace: FONT_BODY, fontSize: 10.8, color: MUTED, margin: 0, lineSpacingMultiple: 1.18 });
-    y += rh + 0.2;
+    s.addText(trigger, { x: 0.9, y: y + 0.12, w: 4.5, h: rh - 0.24, fontFace: FONT_BODY, fontSize: 12, bold: true, color: NAVY, margin: 0, lineSpacingMultiple: 1.12, valign: "middle" });
+    s.addText(why, { x: 5.45, y: y + 0.12, w: 2.7, h: rh - 0.24, fontFace: FONT_BODY, fontSize: 10.2, italic: true, color: MUTED, margin: 0, lineSpacingMultiple: 1.15, valign: "middle" });
+    s.addText(method, { x: 8.25, y: y + 0.15, w: 4.05, h: 0.5, fontFace: FONT_HEAD, fontSize: 13, bold: true, color: TERRACOTTA, margin: 0 });
+    s.addText(how, { x: 8.25, y: y + 0.58, w: 4.05, h: 0.65, fontFace: FONT_BODY, fontSize: 10.2, color: MUTED, margin: 0, lineSpacingMultiple: 1.15 });
+    y += rh + 0.15;
   });
   s.addNotes(
     "This is the core of what the JD is asking for: causal inference 'in situations where randomized testing is "
     + "not feasible, practical, or cost-effective.' All three are real, non-randomized business situations, so I "
-    + "pick the quasi-experimental design that fits each one's structure rather than forcing one method on all "
-    + "three. The third row is deliberately the weakest identification of the three -- I say that openly, both "
-    + "here and later on the limitations slide."
+    + "pick the quasi-experimental design that fits each one's actual structure rather than forcing one method on "
+    + "all three. The third row is the one place a real experiment IS feasible and cheap -- a small randomized "
+    + "holdout -- so that's what it uses, rather than reaching for an observational method just because the other "
+    + "two triggers needed one."
   );
 }
 
@@ -293,26 +315,26 @@ const pres = newPres();
   pageNum(s, 7);
 
   s.addImage({ path: FIG("rdd_density_check.png"), x: 0.6, y: 2.15, w: 7.0, h: 4.7 });
-  s.addText("McCrary-style density test", { x: 7.9, y: 2.3, w: 4.8, h: 0.4, fontFace: FONT_HEAD, fontSize: 15, bold: true, color: NAVY, margin: 0 });
+  s.addText("McCrary-style density test — HV population only", { x: 7.9, y: 2.3, w: 4.8, h: 0.55, fontFace: FONT_HEAD, fontSize: 14, bold: true, color: NAVY, margin: 0, lineSpacingMultiple: 1.1 });
   s.addText("Customers don't know this internal 30% threshold exists, so deliberate dodging isn't the "
     + "realistic risk — the real risk is any OTHER unknown reason withdrawal size might bunch near 30% "
     + "(round-number withdrawal habits, an unrelated internal rule). This test checks for that directly "
     + "instead of just asserting it away.", {
-    x: 7.9, y: 2.75, w: 4.8, h: 1.5, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.2,
+    x: 7.9, y: 2.85, w: 4.8, h: 1.4, fontFace: FONT_BODY, fontSize: 11.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.2,
   });
-  statCard(s, 7.9, 4.45, 4.8, 1.0, "p = 0.151", "Local log-density jump at cutoff (bootstrap test)", { valueSize: 24 });
-  s.addText("No jump in the density at 30% — consistent with a smooth, unmanipulated running variable.", {
-    x: 7.9, y: 5.6, w: 4.8, h: 1.0, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
+  statCard(s, 7.9, 4.45, 4.8, 1.0, "p = 0.828", "Local log-density jump at cutoff (bootstrap test)", { valueSize: 24 });
+  s.addText("No jump in the density at 30% — consistent with a smooth, unmanipulated running variable. "
+    + "(Restricted to HV accounts, the only population RM outreach applies to under the value split.)", {
+    x: 7.9, y: 5.6, w: 4.8, h: 1.0, fontFace: FONT_BODY, fontSize: 11.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
   });
   s.addNotes(
-    "If asked 'why check this at all, customers don't know the 30% rule exists' — that's exactly right, and it's "
+    "If asked 'why check this at all, customers don't know the 30% rule exists' -- that's exactly right, and it's "
     + "why I don't expect INTENTIONAL gaming. But the McCrary test isn't only a test for intentional gaming; it's "
     + "a general smoothness check on the running variable's density, which would also catch unrelated sources of "
-    + "bunching (e.g. round-number withdrawal amounts, or some other bank rule that happens to also trigger near "
-    + "30%) that could bias the comparison even without anyone trying to dodge OUR rule specifically. It's also "
-    + "the standard, expected validation step for any RDD -- skipping it is what would actually raise questions, "
-    + "and it's specifically what lets this method carry a 'high confidence, directly tested' label instead of "
-    + "DoubleML's 'moderate confidence, untestable assumption' label a few slides later."
+    + "bunching that could bias the comparison even without anyone trying to dodge OUR rule specifically. It's "
+    + "also the standard, expected validation step for any RDD -- skipping it is what would actually raise "
+    + "questions. Restricting to HV accounts here matters for external validity too: this estimate speaks to the "
+    + "HV population it was tested on, not a claim about how RM outreach would work on LV accounts."
   );
 }
 
@@ -320,16 +342,16 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "RDD — Result");
-  slideTitle(s, "RM outreach cuts 60-day churn by ~11 points at the margin");
+  slideTitle(s, "RM outreach cuts 60-day churn by ~8 points at the margin");
   pageNum(s, 8);
 
   s.addImage({ path: FIG("rdd_effect_plot.png"), x: 0.6, y: 2.15, w: 7.5, h: 4.75 });
 
-  statCard(s, 8.35, 2.15, 4.35, 1.05, "-1.5 pp", "Naive treated-vs-control (biased by confound)", { valueColor: MUTED, valueSize: 24 });
-  statCard(s, 8.35, 3.35, 4.35, 1.05, "-10.7 pp", "RDD robust estimate  ·  95% CI [-14.8, -6.6]  ·  p<0.001", { valueSize: 26 });
-  s.addText("Bandwidth sensitivity: stable between -9.4pp and -10.7pp across h = 4 to 20 months. Graded "
-    + "against the effect I built into the simulation: RDD lands within 1.3pp of the true value — the naive "
-    + "comparison doesn't.", {
+  statCard(s, 8.35, 2.15, 4.35, 1.05, "-0.2 pp", "Naive treated-vs-control (biased by confound)", { valueColor: MUTED, valueSize: 26 });
+  statCard(s, 8.35, 3.35, 4.35, 1.05, "-8.3 pp", "RDD robust estimate  ·  95% CI [-12.3, -4.3]  ·  p<0.001", { valueSize: 26 });
+  s.addText("Bandwidth sensitivity: stable in the high single digits across h = 4 to 20 months. Graded against "
+    + "the effect I built into the simulation: RDD lands within 1.3pp of the true local value near the cutoff — "
+    + "the naive comparison, near zero, doesn't come close.", {
     x: 8.35, y: 4.6, w: 4.35, h: 2.0, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
   });
   s.addNotes(
@@ -344,30 +366,29 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "DiD — Design & Validation");
-  slideTitle(s, "The offer rolled out by customer-value tier — a staggered natural experiment");
+  slideTitle(s, "One launch date, one treated group — parallel pre-trends is the assumption to check");
   pageNum(s, 9);
 
   s.addImage({ path: FIG("did_pretrends_check.png"), x: 0.6, y: 2.15, w: 7.4, h: 4.6 });
   s.addText("Parallel pre-trends check", { x: 8.15, y: 2.3, w: 4.55, h: 0.4, fontFace: FONT_HEAD, fontSize: 15, bold: true, color: NAVY, margin: 0 });
-  s.addText("RM capacity is limited, so the offer rolled out to the top-value tier first, then the next, "
-    + "then the next — tier 4 (bottom 25% by value) hadn't gone live by the end of the observation window. "
-    + "DiD's core assumption: before any tier goes live, they should trend together.", {
-    x: 8.15, y: 2.75, w: 4.55, h: 1.6, fontFace: FONT_BODY, fontSize: 11.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
+  s.addText("HV and LV accounts differ in baseline churn LEVEL (HV churns less overall regardless of any "
+    + "offer) — DiD doesn't need them equal, it needs them moving in the same DIRECTION before the offer "
+    + "launches. That's what this checks, restricted to the pre-launch months only.", {
+    x: 8.15, y: 2.75, w: 4.55, h: 1.5, fontFace: FONT_BODY, fontSize: 11.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
   });
-  statCard(s, 8.15, 4.55, 4.55, 1.0, "p = 0.951", "F-test on tier × month interaction, common pre-period", { valueSize: 24 });
-  s.addText("No evidence of differential pre-trends. (Restricted to the common window before ANY tier "
-    + "adopts — mixing in tiers with unequal pre-period length would bias this test.)", {
-    x: 8.15, y: 5.65, w: 4.55, h: 1.1, fontFace: FONT_BODY, fontSize: 11, italic: true, color: MUTED, margin: 0, lineSpacingMultiple: 1.2,
+  statCard(s, 8.15, 4.4, 4.55, 1.0, "p = 0.633", "F-test on value-group × month interaction, pre-launch only", { valueSize: 24 });
+  s.addText("No evidence of differential pre-trends. Because there's exactly one treated group and one launch "
+    + "date, this design also sidesteps the staggered-adoption bias (Goodman-Bacon 2021) that a multi-wave "
+    + "rollout would introduce — there's no already-treated cohort to contaminate the comparison.", {
+    x: 8.15, y: 5.5, w: 4.55, h: 1.3, fontFace: FONT_BODY, fontSize: 11, italic: true, color: MUTED, margin: 0, lineSpacingMultiple: 1.2,
   });
   s.addNotes(
-    "Point out the deliberate design choice: staggering by CUSTOMER VALUE TIER rather than region is the more "
-    + "realistic mechanism for a bank -- ops/RM bandwidth is genuinely scarce, so a phased rollout by value tier "
-    + "is exactly how a program like this would actually go out the door. It also makes the naive-TWFE bias "
-    + "sharper and easier to explain: high-value tiers already tend to have different baseline churn than "
-    + "low-value tiers, so which tier you're in is correlated with both treatment timing AND the outcome -- "
-    + "textbook confound structure for staggered-adoption bias. I also restricted the interaction test to the "
-    + "common pre-period window, because comparing tiers with very different amounts of pre-period data would "
-    + "itself create a spurious 'differential trend' finding unrelated to the actual assumption being tested."
+    "The offer launches for the whole HV group on ONE calendar month, and LV never gets it in-window -- a plain "
+    + "2-group, single-adoption-date design, deliberately simpler than a multi-wave rollout. That's a design "
+    + "choice worth being able to defend if asked 'why not stagger it': staggering by tier would have introduced "
+    + "exactly the kind of already-treated-cohort contamination Goodman-Bacon (2021) warns about, and there's no "
+    + "operational reason (RM capacity, say) that requires phasing HERE the way there was for the withdrawal "
+    + "trigger's RM contacts -- an offer code can go out to everyone at once."
   );
 }
 
@@ -375,151 +396,190 @@ const pres = newPres();
 {
   const s = lightSlide(pres);
   kicker(s, "DiD — Result");
-  slideTitle(s, "The naive estimator and a clean-control one — and why I check both");
+  slideTitle(s, "The textbook 2x2 estimator — and the regression that reproduces it");
   pageNum(s, 10);
 
   s.addImage({ path: FIG("did_event_study.png"), x: 0.6, y: 2.15, w: 7.4, h: 4.55 });
 
-  statCard(s, 8.15, 2.15, 4.55, 0.95, "-3.5 pp", "Naive static TWFE (tier + month FE)", { valueColor: MUTED, valueSize: 22 });
-  statCard(s, 8.15, 3.25, 4.55, 0.95, "-3.7 pp", "Clean-control (stacked) DiD", { valueSize: 24 });
-  s.addText("Effect ramps in over ~3 months as RM awareness and take-up build. Naive TWFE pools all tiers "
-    + "and periods into one regression, so already-treated tiers implicitly contaminate the comparison trend "
-    + "for later tiers (Goodman-Bacon 2021 negative-weighting bias). The clean-control estimator instead "
-    + "compares each newly-treated tier only to tiers that are NOT YET treated at that point (in the spirit "
-    + "of Cengiz et al. 2019's stacked-regression approach) and lands closer to the true simulated effect "
-    + "(-4.7pp).", {
-    x: 8.15, y: 4.35, w: 4.55, h: 2.6, fontFace: FONT_BODY, fontSize: 11.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
+  statCard(s, 8.15, 2.15, 4.55, 0.95, "-5.8 pp", "2x2 DiD: (HV change) − (LV change)", { valueSize: 24 });
+  statCard(s, 8.15, 3.25, 4.55, 0.95, "-5.8 pp", "Regression DiD, HC1 robust SE  ·  p<0.001", { valueSize: 24 });
+  s.addText("HV: 11.9% → 5.8% churn (change -6.1pp). LV: 17.8% → 17.5% (change -0.3pp). The regression "
+    + "coefficient matches the four-group-means number almost exactly, as it should with one treated group and "
+    + "one adoption date — no cohort-averaging step for the two to disagree on. The effect ramps in over "
+    + "roughly 3 months as awareness and take-up build; graded against the true simulated effect (-5.1pp), both "
+    + "estimators land within a point.", {
+    x: 8.15, y: 4.35, w: 4.55, h: 2.6, fontFace: FONT_BODY, fontSize: 11.2, color: MUTED, margin: 0, lineSpacingMultiple: 1.2,
   });
   s.addNotes(
-    "Be honest here if pressed: the gap between naive and clean-control is real but not huge in this simulation -- "
-    + "I'd say the point isn't that naive TWFE blew up spectacularly here, it's that you can't assume it won't. "
-    + "With more tiers, longer ramps, or more heterogeneity, that gap widens, so checking for it is the "
-    + "discipline, not the headline number. If asked whether this is Callaway-Sant'Anna: no -- it's a simpler "
-    + "clean-control comparison that captures the same intuition (don't let already-treated units bias the "
-    + "control group) without CS's full doubly-robust, bootstrapped machinery. I'd reach for the real CS "
-    + "estimator (or DoubleML-based staggered-DiD tools) if I needed the extra robustness in production."
+    "This is deliberately the most 'textbook' estimator in the deck, and I say so if asked: with a clean 2-group, "
+    + "single-adoption-date design, there's no staggered-rollout machinery needed -- the four-group-means "
+    + "differencing and the fixed-effects regression are two ways of computing the SAME number, which is itself "
+    + "a good sanity check to show working. If this were a multi-wave rollout instead, I'd reach for a "
+    + "clean-control / stacked estimator or the real Callaway-Sant'Anna package -- worth knowing when you'd need "
+    + "that extra machinery and when you wouldn't."
   );
 }
 
-// ============================================================ SLIDE 11: DOUBLEML (DORMANT)
+// ============================================================ SLIDE 11: DORMANT RCT DESIGN
 {
   const s = lightSlide(pres);
-  kicker(s, "Layer 2 (cont.) — dormant play: no design to exploit");
-  slideTitle(s, "No cutoff, no rollout — adjust for confounders directly with ML");
+  kicker(s, "Layer 2 (cont.) — dormant plays: no natural design, so build one in");
+  slideTitle(s, "A small randomized holdout, inside each value tier");
   pageNum(s, 11);
 
-  s.addImage({ path: FIG("doubleml_dormant.png"), x: 0.6, y: 2.15, w: 6.6, h: 4.75 });
+  s.addShape("roundRect", { x: 0.6, y: 2.15, w: 5.75, h: 4.6, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
+  s.addText("THE DESIGN", { x: 0.9, y: 2.35, w: 5.1, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
+  s.addText([
+    { text: "HV tier: 90% get a 90-day, 5%-cashback-on-grocery-spend offer; 10% randomly held out (no offer)", options: { bullet: true, breakLine: true } },
+    { text: "LV tier: 90% get an SMS/email reminder; 10% randomly held out", options: { bullet: true, breakLine: true } },
+    { text: "The two tiers are NEVER pooled — HV and LV differ on both risk level and which offer they get, so mixing them would confound \"which offer works\" with \"which tier is lower-risk\"", options: { bullet: true, breakLine: true } },
+    { text: "Randomization within tier — not the ops team's judgment — decides who's held out, so treated vs. holdout is a clean comparison by construction", options: { bullet: true, breakLine: true } },
+  ], { x: 0.9, y: 2.75, w: 5.15, h: 3.9, fontFace: FONT_BODY, fontSize: 12, color: NAVY, lineSpacingMultiple: 1.18, margin: 0, paraSpaceAfter: 7 });
 
-  s.addText("Why this one's different", { x: 7.5, y: 2.15, w: 5.2, h: 0.4, fontFace: FONT_HEAD, fontSize: 14.5, bold: true, color: NAVY, margin: 0 });
-  s.addText("Accounts get flagged (dormancy streak, or a low-engagement + short dormancy combination) and "
-    + "treated together — no threshold like RDD, no phased rollout like DiD. The flagging rule itself is the "
-    + "confound: the accounts most likely to be flagged are also the ones most likely to churn anyway "
-    + "(\"confounding by indication\"). That's WHY the naive and even logistic-adjusted comparisons below get "
-    + "the wrong sign.", {
-    x: 7.5, y: 2.55, w: 5.2, h: 1.85, fontFace: FONT_BODY, fontSize: 11.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
+  s.addShape("roundRect", { x: 6.6, y: 2.15, w: 5.9, h: 4.6, rectRadius: 0.08, fill: { color: NAVY }, line: { type: "none" } });
+  s.addText("RANDOMIZATION-BALANCE CHECK (\"TABLE 1\")", { x: 6.95, y: 2.35, w: 5.2, h: 0.35, fontFace: FONT_BODY, fontSize: 11.5, bold: true, color: TERRACOTTA, charSpacing: 1, margin: 0 });
+  s.addText("Before trusting the comparison, check that randomization actually balanced the two arms on "
+    + "observed covariates — engagement score, dormancy streak, product count, tenure, balance — within each "
+    + "tier, BEFORE any offer went out.", {
+    x: 6.95, y: 2.75, w: 5.2, h: 1.15, fontFace: FONT_BODY, fontSize: 11.5, color: ICE, margin: 0, lineSpacingMultiple: 1.2,
   });
-  statCard(s, 7.5, 4.45, 2.5, 0.95, "+11.2pp", "Naive diff — wrong sign", { valueColor: MUTED, valueSize: 18 });
-  statCard(s, 10.2, 4.45, 2.5, 0.95, "+0.8pp", "Logistic AME — wrong sign", { valueColor: MUTED, valueSize: 18 });
-  statCard(s, 7.5, 5.5, 5.2, 1.1, "-6.5 pp", "DoubleML (IRM, XGBoost nuisance, ATT) — correct sign  ·  95% CI [-8.6, -4.5]  ·  true value -9.8pp", { valueSize: 24 });
+  statCard(s, 6.95, 4.0, 5.2, 1.05, "0 / 10", "Covariate balance tests flagged at p≤0.05 (both tiers, 5 covariates each)", { fill: WHITE, valueSize: 26 });
+  s.addText("This is the standard \"Table 1\" any RCT write-up would run — the randomized-holdout design earns "
+    + "its high-confidence label because this is directly testable, unlike the observational method it replaces.", {
+    x: 6.95, y: 5.2, w: 5.2, h: 1.35, fontFace: FONT_BODY, fontSize: 11.2, italic: true, color: ICE, margin: 0, lineSpacingMultiple: 1.2,
+  });
   s.addNotes(
-    "This is the deliberately weakest-identification method of the three, and I say so explicitly: DoubleML's "
-    + "validity rests on selection-on-observables -- 'we captured every important confounder' -- which, unlike "
-    + "RDD's no-manipulation check or DiD's pre-trends check, is NOT directly testable from the data. I include "
-    + "it anyway because it's genuinely the right tool for a trigger with no design-based structure, and because "
-    + "showing naive and logistic regression BOTH getting the wrong sign is a clean, defensible demonstration of "
-    + "why simple methods fail under this kind of threshold-based confounding, and why tree-based nuisance models "
-    + "(which can represent a branching rule; linear logistic regression can't) recover the correct sign. I target "
-    + "ATT not ATE here on purpose -- the true effect is concentrated in the ~30% of accounts that get flagged, "
-    + "so the population-average effect is small and noisy, while the effect ON THE TREATED is the number that "
-    + "actually matters for deciding whether to keep running this play on exactly those accounts."
+    "This trigger used to have NO exploitable design at all -- an ops team just decided who to call, based on a "
+    + "mix of signals, which is exactly a selection-on-observables problem an earlier version of this project "
+    + "handled with DoubleML. The redesign here is deliberate: rather than reach for a heavier observational "
+    + "estimator, build the missing randomization directly into the rollout -- a small (10%) holdout is cheap, "
+    + "doesn't meaningfully change who gets helped, and converts an untestable identifying assumption into a "
+    + "directly-testable one. The balance check is what proves the randomization actually worked, not just that "
+    + "it was intended to."
   );
 }
 
-// ============================================================ SLIDE 12: OPTIMIZATION FORMULATION
+// ============================================================ SLIDE 12: DORMANT RCT RESULT
+{
+  const s = lightSlide(pres);
+  kicker(s, "Dormant RCT — Result");
+  slideTitle(s, "Two tier-specific tests — both correctly signed, both statistically decisive");
+  pageNum(s, 12);
+
+  s.addImage({ path: FIG("dormant_rct.png"), x: 0.6, y: 2.15, w: 6.7, h: 4.75 });
+
+  statCard(s, 7.55, 2.15, 5.15, 1.35, "-10.8 pp", "HV: cashback vs. holdout  ·  95% CI [-14.5, -7.1]  ·  p<0.001  ·  true effect -10.4pp", { valueSize: 24 });
+  statCard(s, 7.55, 3.65, 5.15, 1.35, "-5.8 pp", "LV: SMS vs. holdout  ·  95% CI [-9.8, -1.9]  ·  p=0.002  ·  true effect -6.0pp", { valueSize: 24 });
+  s.addText("Both estimates land within half a point of the true simulated effect. The HV cashback play has "
+    + "both the larger effect AND the larger sample — it turns out to be the single largest driver of value in "
+    + "the optimizer's allocation (see Optimize).", {
+    x: 7.55, y: 5.15, w: 5.15, h: 1.7, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
+  });
+  s.addNotes(
+    "Note the two tiers are never pooled -- each has its own two-proportion z-test against its own holdout. The "
+    + "LV test has a visibly wider CI and a less extreme z (bring up the backup slide's design-effect table if "
+    + "asked why a 90/10 split still has enough power here -- short answer: it's the ABSOLUTE size of the "
+    + "smaller arm, ~600 accounts, not its SHARE, that sets the precision floor, and 600 is enough to detect an "
+    + "effect this size). If asked why ATT-style framing isn't needed here the way it was for the old DoubleML "
+    + "version: randomization already IS the comparison being asked for -- there's no separate 'effect on the "
+    + "treated' vs. population question when treatment assignment was randomized within the exact population "
+    + "being measured."
+  );
+}
+
+// ============================================================ SLIDE 13: OPTIMIZATION FORMULATION
 {
   const s = lightSlide(pres);
   kicker(s, "Layer 3 — Optimize");
   slideTitle(s, "From “top 50% by value” to a formal budget allocation");
-  pageNum(s, 12);
+  pageNum(s, 13);
 
-  s.addShape("roundRect", { x: 0.6, y: 2.2, w: 5.7, h: 4.35, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
-  s.addText("OBJECTIVE", { x: 0.95, y: 2.45, w: 5, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
+  s.addShape("roundRect", { x: 0.6, y: 2.05, w: 5.9, h: 4.6, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
+  s.addText("OBJECTIVE", { x: 0.95, y: 2.25, w: 5, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
   s.addText("Maximize total net expected value protected:\nP(churn mode) × causal effect (pp) × dollars at "
     + "risk − intervention cost, summed across every account-intervention pair selected.", {
-    x: 0.95, y: 2.85, w: 5.05, h: 1.35, fontFace: FONT_BODY, fontSize: 13, color: NAVY, margin: 0, lineSpacingMultiple: 1.25,
+    x: 0.95, y: 2.62, w: 5.3, h: 1.25, fontFace: FONT_BODY, fontSize: 12.5, color: NAVY, margin: 0, lineSpacingMultiple: 1.22,
   });
-  s.addText("\"Dollars at risk\" = account_value = balance × (1 + 15% × product_count) — a dollar-denominated, "
-    + "sensitivity-tested proxy for relationship value (see Business Impact), not an arbitrary weighted score.", {
-    x: 0.95, y: 4.15, w: 5.05, h: 0.85, fontFace: FONT_BODY, fontSize: 10.5, italic: true, color: MUTED, margin: 0, lineSpacingMultiple: 1.2,
-  });
-  s.addText("CONSTRAINTS", { x: 0.95, y: 5.0, w: 5, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
+  s.addText("CONSTRAINTS (3)", { x: 0.95, y: 3.85, w: 5, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
   s.addText([
     { text: "Total spend ≤ monthly retention budget", options: { bullet: true, breakLine: true } },
-    { text: "RM contacts ≤ RM capacity (the real scarce resource)", options: { bullet: true, breakLine: true } },
-    { text: "At most one intervention per account", options: { bullet: true, breakLine: true } },
-  ], { x: 0.95, y: 5.4, w: 5.05, h: 1.1, fontFace: FONT_BODY, fontSize: 12, color: NAVY, margin: 0, lineSpacingMultiple: 1.15, paraSpaceAfter: 3 });
+    { text: "RM contacts ≤ RM capacity (the real scarce resource for the withdrawal play)", options: { bullet: true, breakLine: true } },
+    { text: "At most one intervention per account — plus each account is only a candidate for the interventions its tier is actually eligible for (cashback: HV only; SMS: LV only)", options: { bullet: true, breakLine: true } },
+  ], { x: 0.95, y: 4.22, w: 5.35, h: 2.3, fontFace: FONT_BODY, fontSize: 11.5, color: NAVY, margin: 0, lineSpacingMultiple: 1.18, paraSpaceAfter: 4 });
 
-  s.addShape("roundRect", { x: 6.6, y: 2.2, w: 5.9, h: 4.35, rectRadius: 0.08, fill: { color: NAVY }, line: { type: "none" } });
-  s.addText("EFFECT SIZES FEEDING THE OPTIMIZER", { x: 6.95, y: 2.45, w: 5.2, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1, margin: 0 });
+  s.addShape("roundRect", { x: 6.7, y: 2.05, w: 5.9, h: 2.55, rectRadius: 0.08, fill: { color: NAVY }, line: { type: "none" } });
+  s.addText("EFFECT SIZES FEEDING THE OPTIMIZER (ALL HIGH-CONFIDENCE)", { x: 7.05, y: 2.22, w: 5.2, h: 0.55, fontFace: FONT_BODY, fontSize: 10.8, bold: true, color: TERRACOTTA, charSpacing: 0.5, margin: 0, lineSpacingMultiple: 1.1 });
   const effRows = [
-    ["Large withdrawal → RM call", "10.7 pp", "RDD — high confidence"],
-    ["DD stop → $100 offer", "3.7 pp", "clean-control DiD — high confidence"],
-    ["Dormant → reminder", "6.5 pp", "DoubleML — moderate confidence (untestable assumption)"],
+    ["Large withdrawal → RM call (HV)", "8.3 pp"],
+    ["DD stop → $100 offer (HV)", "5.8 pp"],
+    ["Dormant → cashback (HV)", "10.8 pp"],
+    ["Dormant → SMS (LV)", "5.8 pp"],
   ];
-  let ey = 2.95;
-  effRows.forEach(([name, eff, src]) => {
-    s.addText(name, { x: 6.95, y: ey, w: 3.3, h: 0.4, fontFace: FONT_BODY, fontSize: 12.5, bold: true, color: WHITE, margin: 0 });
-    s.addText(eff, { x: 10.2, y: ey, w: 1.1, h: 0.4, fontFace: FONT_HEAD, fontSize: 14, bold: true, color: TERRACOTTA, align: "right", margin: 0 });
-    s.addText(src, { x: 6.95, y: ey + 0.38, w: 5.2, h: 0.55, fontFace: FONT_BODY, fontSize: 10.5, italic: true, color: ICE, margin: 0, lineSpacingMultiple: 1.1 });
-    ey += 1.25;
+  let ey = 2.85;
+  effRows.forEach(([name, eff]) => {
+    s.addText(name, { x: 7.05, y: ey, w: 3.9, h: 0.35, fontFace: FONT_BODY, fontSize: 11.5, bold: true, color: WHITE, margin: 0 });
+    s.addText(eff, { x: 10.6, y: ey, w: 0.9, h: 0.35, fontFace: FONT_HEAD, fontSize: 13, bold: true, color: TERRACOTTA, align: "right", margin: 0 });
+    ey += 0.4;
   });
+
+  s.addShape("roundRect", { x: 6.7, y: 4.75, w: 5.9, h: 1.9, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
+  s.addText("WHEN THIS APPROACH DOES / DOESN'T APPLY", { x: 7.0, y: 4.9, w: 5.3, h: 0.35, fontFace: FONT_BODY, fontSize: 11, bold: true, color: TERRACOTTA, charSpacing: 0.5, margin: 0 });
+  s.addText("Fits: a handful of discrete, mutually-exclusive interventions with known effect sizes and hard "
+    + "resource caps — exactly this shape. Wouldn't fit: continuous decisions (how MUCH to offer, not just "
+    + "whether), interventions with interaction effects between accounts, or effect sizes too uncertain to plug "
+    + "into a point-estimate objective without first running a sensitivity/robustness check.", {
+    x: 7.0, y: 5.25, w: 5.3, h: 1.3, fontFace: FONT_BODY, fontSize: 10.5, color: NAVY, margin: 0, lineSpacingMultiple: 1.18,
+  });
+
   s.addNotes(
     "This is a multiple-choice knapsack problem, solved with PuLP (CBC solver): each account can get at most one "
-    + "intervention, subject to a total budget and a separate RM-capacity constraint, since RM time -- not dollars "
-    + "-- is actually the binding resource for the withdrawal play. Every effect size here now comes from an "
-    + "actual estimation script, not a hardcoded assumption -- including the dormant number, which used to be a "
-    + "flat 3pp guess and is now DoubleML's estimate, carried into the optimizer with its own honestly-labeled "
-    + "lower confidence tier rather than being treated as equally solid."
+    + "intervention, subject to a total budget and a separate RM-capacity constraint, since RM time -- not "
+    + "dollars -- is actually the binding resource for the withdrawal play. Every effect size here now comes "
+    + "from a design-based estimate with a checked identifying assumption -- RDD's no-manipulation test, DiD's "
+    + "pre-trends test, and the dormant RCT's balance check -- so, unlike an earlier version of this project, "
+    + "there's no separate lower-confidence tier to flag in the objective. If asked when NOT to reach for an "
+    + "ILP: when the decision isn't actually discrete (e.g. setting a continuous discount rate), or when the "
+    + "input effect sizes themselves are too uncertain to trust as point estimates -- you'd want a robust/ "
+    + "distributionally-aware formulation first, not a plain linear objective."
   );
 }
 
-// ============================================================ SLIDE 13: OPTIMIZATION RESULT
+// ============================================================ SLIDE 14: OPTIMIZATION RESULT
 {
   const s = lightSlide(pres);
   kicker(s, "Optimize — Result");
-  slideTitle(s, "Same budget, same RM capacity: 63% more value protected");
-  pageNum(s, 13);
+  slideTitle(s, "Same budget, same RM capacity: ~49% more value protected");
+  pageNum(s, 14);
 
   s.addImage({ path: FIG("optimization_comparison.png"), x: 0.6, y: 2.15, w: 6.7, h: 4.75 });
 
-  statCard(s, 7.55, 2.15, 5.15, 1.15, "+63%", "Net value protected vs. the heuristic, at equal budget & RM capacity");
-  statCard(s, 7.55, 3.45, 5.15, 1.15, "297 / 400", "RM contacts used — the optimizer stops once marginal expected value turns negative, not when capacity runs out");
-  s.addText("The heuristic doesn't discriminate by risk LEVEL within the top-50%-value pool — it spends on "
-    + "high-value accounts whether they're actually at risk or not, and it has no notion of an RM-capacity limit "
-    + "at all. The optimizer ranks by expected payoff per dollar and per RM-minute directly, and it's disciplined "
+  statCard(s, 7.55, 2.15, 5.15, 1.15, "+49.4%", "Net value protected vs. the heuristic, at equal budget & RM capacity");
+  statCard(s, 7.55, 3.45, 5.15, 1.15, "160 / 400", "RM contacts used — the optimizer stops once marginal expected value turns negative, not when capacity runs out");
+  s.addText("The heuristic doesn't discriminate by risk LEVEL within the top-50%-value pool, and it has no "
+    + "notion of an RM-capacity limit at all (uncapped, it actually overspends both budget and RM capacity on "
+    + "its own). The optimizer ranks by expected payoff per dollar and per RM-minute directly, and is disciplined "
     + "enough to leave budget and capacity on the table rather than fund a marginal account that isn't worth it.", {
     x: 7.55, y: 4.85, w: 5.15, h: 2.0, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
   });
   s.addNotes(
-    "Walk through this carefully: the heuristic, run without any cap, actually overspends the RM capacity on its "
-    + "own -- that's itself a finding worth surfacing to the business, since it means the original process needed "
-    + "an unwritten manual cap that the optimization now formalizes. Also worth noting if asked: the +63% figure "
-    + "went down from an earlier draft's +497% once I fixed the dollar-at-risk formula and the DiD/dormant effect "
-    + "sizes to be properly estimated rather than assumed -- I'd rather present the more defensible, smaller "
-    + "number than an inflated one I can't fully stand behind."
+    "Walk through this carefully: the heuristic, run without any cap, overspends both the budget and the RM "
+    + "capacity on its own -- that's itself a finding worth surfacing to the business, since it means the "
+    + "original process needed an unwritten manual cap that the optimization now formalizes. The dormant "
+    + "cashback play alone accounts for the majority of the optimizer's total net value ($328k of $405k) -- worth "
+    + "calling out since it's also the play with the most causal-identification headroom gained in this redesign."
   );
 }
 
-// ============================================================ SLIDE 14: BUSINESS IMPACT
+// ============================================================ SLIDE 15: BUSINESS IMPACT
 {
   const s = lightSlide(pres);
   kicker(s, "So what — business impact");
   slideTitle(s, "Translating the model into a dollar figure a stakeholder can act on");
-  pageNum(s, 14);
+  pageNum(s, 15);
 
   s.addImage({ path: FIG("business_impact_headline.png"), x: 0.6, y: 2.15, w: 6.1, h: 4.75 });
 
-  statCard(s, 7.05, 2.15, 5.65, 1.25, "+$116,211", "Incremental net value protected, per 10,000 scored accounts (+63.2%)");
+  statCard(s, 7.05, 2.15, 5.65, 1.25, "+$133,873", "Incremental net value protected, per 10,000 scored accounts (+49.4%)");
   s.addText("Deliberately NOT scaled to a fabricated \"total accounts at the bank\" number — this project's "
     + "data is a sized demo, not the real book. Reported per 10,000 scored accounts with an explicit scaling "
     + "instruction instead: multiply by (your real scored-account count / 10,000). The mechanism — same spend, "
@@ -539,22 +599,22 @@ const pres = newPres();
   );
 }
 
-// ============================================================ SLIDE 15: ACTIONABLE RECOMMENDATIONS
+// ============================================================ SLIDE 16: ACTIONABLE RECOMMENDATIONS
 {
   const s = lightSlide(pres);
   kicker(s, "So what — recommendations");
-  slideTitle(s, "Four actions, tiered by how much confidence each estimate actually earned");
-  pageNum(s, 15);
+  slideTitle(s, "Four actions — all built on high-confidence, design-based evidence");
+  pageNum(s, 16);
 
   const recs = [
     ["1", "Adopt the ILP optimizer", "in place of the informal \"top 50% by value\" rule.",
       "High — mechanical improvement on already-validated inputs, not a new causal claim.", NAVY_MID],
     ["2", "Formalize the 30%-withdrawal → RM-outreach trigger", "as an explicit, monitored policy.",
       "High — RDD, no-manipulation assumption directly tested.", NAVY_MID],
-    ["3", "Don't evaluate the DD-stop offer's rollout before month 3", "of each wave — the effect ramps in.",
+    ["3", "Scale both dormant plays (HV cashback, LV SMS)", "to the full flagged population — no longer a pilot-first recommendation.",
+      "High — randomized within-tier holdout, balance checked.", TERRACOTTA],
+    ["4", "Don't evaluate the DD-stop offer's rollout before month 3", "the effect ramps in as awareness/take-up build.",
       "High — DiD, parallel pre-trends directly tested.", NAVY_MID],
-    ["4", "Do NOT scale budget into the dormant play", "on this estimate alone — run a real randomized pilot first.",
-      "Moderate — DoubleML's unconfoundedness assumption isn't testable from data.", TERRACOTTA],
   ];
   let y = 2.15;
   recs.forEach(([n, action, detail, conf, color]) => {
@@ -568,65 +628,70 @@ const pres = newPres();
     s.addText(conf, { x: 9.3, y: y + 0.4, w: 3.05, h: 0.6, fontFace: FONT_BODY, fontSize: 10, color: NAVY, margin: 0, lineSpacingMultiple: 1.1 });
     y += 1.22;
   });
-  s.addText("Priority order follows confidence, not effect size — the dormant play's 6.5pp is the second-largest "
-    + "estimated effect, but it's ranked last because its identifying assumption is the one that can't be checked.", {
-    x: 0.6, y: 6.95, w: 11.9, h: 0.4, fontFace: FONT_BODY, fontSize: 11, italic: true, color: MUTED, margin: 0,
+  s.addText("Every effect size behind these four is now design-based and high-confidence — the redesign's "
+    + "point wasn't to make one number bigger, it was to close the identification gap the old observational "
+    + "dormant estimate carried. Priority here follows practical sequencing (adopt the mechanical win first, "
+    + "then the largest-impact scaled plays), not a confidence hierarchy — that gap no longer exists.", {
+    x: 0.6, y: 6.85, w: 11.9, h: 0.55, fontFace: FONT_BODY, fontSize: 11, italic: true, color: MUTED, margin: 0,
   });
   s.addNotes(
-    "This is the deliverable a Decision Analytics stakeholder actually wants, and it's deliberately not just "
-    + "'here are three effect sizes' -- it's prioritized, and the priority order is driven by how much I trust "
-    + "each identifying assumption, not by which number is biggest. Recommendation 4 is the one I'd expect the "
-    + "most pushback on, and I want to be the one raising the caveat before anyone else does."
+    "This is the deliverable a Decision Analytics stakeholder actually wants. Point out explicitly, if not asked, "
+    + "that recommendation 3 moved from 'don't scale on this alone, pilot first' in an earlier version of this "
+    + "project to 'scale it, it's high-confidence now' -- that shift is the direct, concrete payoff of redesigning "
+    + "the dormant play as a randomized holdout instead of an observational estimate. I want to be the one "
+    + "pointing out that shift, not waiting to be asked why it changed."
   );
 }
 
-// ============================================================ SLIDE 16: TYING BACK
+// ============================================================ SLIDE 17: TYING BACK
 {
   const s = lightSlide(pres);
   kicker(s, "Result — tying it back");
-  slideTitle(s, "The real project already worked. This is how I'd make it rigorous.");
-  pageNum(s, 16);
+  slideTitle(s, "The real project already worked. This is the engine underneath it, made rigorous.");
+  pageNum(s, 17);
 
   s.addShape("roundRect", { x: 0.6, y: 2.25, w: 5.8, h: 4.3, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
   s.addText("WHAT ACTUALLY HAPPENED", { x: 0.95, y: 2.5, w: 5.1, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
   statCard(s, 0.95, 2.95, 5.1, 1.15, "-30%", "Relative churn reduction, randomized A/B test vs. blanket outreach", { fill: WHITE });
-  s.addText("Validated the only way we had time and buy-in to validate: an outcomes-based A/B test. That's a "
-    + "real, defensible result — and it's also the limit of what we did.", {
+  s.addText("Validated the only way we had time and buy-in to validate: an outcomes-based A/B test on the "
+    + "overall trigger-and-outreach program. That's a real, defensible result — and it's also the limit of "
+    + "what we did at the time.", {
     x: 0.95, y: 4.3, w: 5.1, h: 2.0, fontFace: FONT_BODY, fontSize: 12.5, color: MUTED, margin: 0, lineSpacingMultiple: 1.25,
   });
 
   s.addShape("roundRect", { x: 6.7, y: 2.25, w: 5.8, h: 4.3, rectRadius: 0.08, fill: { color: NAVY }, line: { type: "none" } });
-  s.addText("WHAT THIS ADDS", { x: 7.05, y: 2.5, w: 5.1, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
+  s.addText("WHAT THIS ENGINE ADDS", { x: 7.05, y: 2.5, w: 5.1, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
   s.addText([
-    { text: "Causal identification for triggers that CAN'T be A/B tested, not just the ones that can", options: { bullet: true, breakLine: true } },
+    { text: "Per-trigger causal identification, including for the one trigger a blanket A/B test never isolates on its own", options: { bullet: true, breakLine: true } },
     { text: "A formal, re-runnable optimization instead of a fixed value-score cutoff — it flexes with budget", options: { bullet: true, breakLine: true } },
-    { text: "A quantified, confidence-tiered business case instead of a technical result that stops at the model", options: { bullet: true, breakLine: true } },
+    { text: "A quantified, confidence-labeled business case instead of a technical result that stops at the model", options: { bullet: true, breakLine: true } },
     { text: "Every method graded against a known ground truth before I'd trust it on a real decision", options: { bullet: true, breakLine: true } },
   ], { x: 7.05, y: 2.95, w: 5.15, h: 3.4, fontFace: FONT_BODY, fontSize: 12.5, color: WHITE, margin: 0, lineSpacingMultiple: 1.2, paraSpaceAfter: 8 });
 
   s.addNotes(
     "This slide is the bridge back to the STAR story: the real result stands on its own, and everything in this "
-    + "deck is presented as the next iteration of that same project, not a replacement for what actually happened."
+    + "deck is presented as the analytical engine underneath that kind of program — the part the original A/B "
+    + "test alone couldn't show, not a replacement for what actually happened."
   );
 }
 
-// ============================================================ SLIDE 17: LIMITATIONS + WHY VANGUARD
+// ============================================================ SLIDE 18: LIMITATIONS + WHY VANGUARD
 {
   const s = lightSlide(pres);
   kicker(s, "Limitations — and why this role");
   slideTitle(s, "What I'd still want before this touches production");
-  pageNum(s, 17);
+  pageNum(s, 18);
 
   const limits = [
-    ["Dormant-play effect rests on an untestable assumption", "DoubleML corrects the sign vs. naive/logistic, but its selection-on-observables identification can't be checked the way RDD's no-manipulation test or DiD's pre-trends test can — needs a real randomized pilot before scaling spend."],
-    ["No formal independent model-risk validation", "Today's validation is outcomes-based (A/B test) and, here, grading against a KNOWN synthetic truth — a real deployment needs an independent conceptual-soundness review per SR 11-7."],
-    ["Synthetic data throughout", "Built specifically so I could validate method correctness with a known ground truth — real deployment validates differently, without that luxury."],
+    ["Every estimate is scoped to the population it was tested on", "RDD and the DiD offer are HV-only; the cashback play is HV-only and SMS is LV-only. None of these effect sizes should be assumed to generalize across tiers without testing there directly — extrapolating the cashback effect to LV accounts, for instance, would not be valid."],
+    ["No formal independent model-risk validation", "Today's validation is design-based (McCrary, pre-trends, randomization balance) and, here, grading against a KNOWN synthetic truth — a real deployment needs an independent conceptual-soundness review per SR 11-7."],
+    ["Synthetic data throughout", "Built specifically so I could validate method correctness with a known ground truth — real deployment validates differently, without that luxury, and needs its own live monitoring for effect decay over time."],
   ];
   let y = 2.25;
   limits.forEach(([h, b]) => {
     s.addShape("roundRect", { x: 0.6, y, w: 11.9, h: 1.15, rectRadius: 0.06, fill: { color: ICE_TINT }, line: { type: "none" } });
-    s.addText(h, { x: 0.9, y: y + 0.1, w: 4.2, h: 0.95, fontFace: FONT_BODY, fontSize: 13, bold: true, color: NAVY, margin: 0, valign: "middle", lineSpacingMultiple: 1.1 });
-    s.addText(b, { x: 5.25, y: y + 0.1, w: 7.05, h: 0.95, fontFace: FONT_BODY, fontSize: 12, color: MUTED, margin: 0, valign: "middle", lineSpacingMultiple: 1.15 });
+    s.addText(h, { x: 0.9, y: y + 0.1, w: 4.2, h: 0.95, fontFace: FONT_BODY, fontSize: 12.5, bold: true, color: NAVY, margin: 0, valign: "middle", lineSpacingMultiple: 1.1 });
+    s.addText(b, { x: 5.25, y: y + 0.1, w: 7.05, h: 0.95, fontFace: FONT_BODY, fontSize: 11.3, color: MUTED, margin: 0, valign: "middle", lineSpacingMultiple: 1.15 });
     y += 1.35;
   });
 
@@ -636,11 +701,13 @@ const pres = newPres();
   });
   s.addNotes(
     "This slide is deliberate honesty, matching how I handled similar gap questions in the real project's prep -- "
-    + "own the gap, and turn it into the motivation for the role rather than hiding it."
+    + "own the gap, and turn it into the motivation for the role rather than hiding it. The external-validity "
+    + "point is the one I'd expect an interviewer with a stats background to probe hardest -- it's a genuine "
+    + "limitation of doing everything through one shared HV/LV split rather than testing every combination."
   );
 }
 
-// ============================================================ SLIDE 18: CLOSING
+// ============================================================ SLIDE 19: CLOSING
 {
   const s = darkSlide(pres);
   s.addShape("ellipse", { x: -2, y: 4.5, w: 5.5, h: 5.5, fill: { color: NAVY_MID }, line: { type: "none" } });
@@ -653,7 +720,66 @@ const pres = newPres();
   s.addText("Questions welcome.", {
     x: 0.7, y: 4.35, w: 8, h: 0.5, fontFace: FONT_BODY, fontSize: 14, color: ICE, margin: 0,
   });
-  s.addNotes("Invite questions; have the bandwidth-sensitivity table, cohort-level ATT table, and DoubleML CI ready if asked to go deeper.");
+  s.addNotes("Invite questions; have the bandwidth-sensitivity numbers, the 2x2 DiD table, and the appendix "
+    + "SE→z→power backup slide ready if asked to go deeper.");
+}
+
+// ============================================================ SLIDE 20: APPENDIX — BACKUP (SE -> z -> power)
+{
+  const s = lightSlide(pres);
+  kicker(s, "Appendix — backup, in case asked");
+  slideTitle(s, "Why a 90/10 holdout still has enough power to detect the effect");
+  pageNum(s, 20);
+
+  s.addShape("roundRect", { x: 0.6, y: 2.05, w: 5.7, h: 4.7, rectRadius: 0.08, fill: { color: ICE_TINT }, line: { type: "none" } });
+  s.addText("THE FORMULAS", { x: 0.9, y: 2.25, w: 5.1, h: 0.35, fontFace: FONT_BODY, fontSize: 12, bold: true, color: TERRACOTTA, charSpacing: 1.5, margin: 0 });
+  s.addText([
+    { text: "SE (pooled, for the test):  √[ p̄(1−p̄)(1/n₁ + 1/n₂) ]", options: { breakLine: true } },
+    { text: "z = (p₁ − p₂) / SE", options: { breakLine: true } },
+    { text: "Power ≈ Φ(|z| − z꜀ᵣᵢₜ), z꜀ᵣᵢₜ = 1.96 for a two-sided α=0.05", options: { breakLine: true } },
+    { text: "Design effect (fixed total n, unequal split): 1 / [4·r·(1−r)], r = treated-arm share", options: { breakLine: true } },
+  ], { x: 0.9, y: 2.65, w: 5.15, h: 2.1, fontFace: FONT_BODY, fontSize: 12, color: NAVY, lineSpacingMultiple: 1.35, margin: 0, paraSpaceAfter: 8 });
+  s.addText("At r=0.5 the design effect is exactly 1 (no penalty). At r=0.9 (this project's actual split), "
+    + "it's 1/(4·0.9·0.1) = 2.78× the variance a 50/50 split of the SAME total n would have had — worse, but "
+    + "only ~1.67× the SE (√2.78), not a 10x disaster. It's the ABSOLUTE size of the smaller arm (~600 accounts "
+    + "here), not its SHARE, that ultimately sets the precision floor.", {
+    x: 0.9, y: 4.85, w: 5.15, h: 1.75, fontFace: FONT_BODY, fontSize: 11, italic: true, color: MUTED, margin: 0, lineSpacingMultiple: 1.22,
+  });
+
+  s.addShape("roundRect", { x: 6.55, y: 2.05, w: 6.05, h: 4.7, rectRadius: 0.08, fill: { color: NAVY }, line: { type: "none" } });
+  s.addText("WORKED EXAMPLE — LV TIER (SMS), FIXED TOTAL n=6,000", { x: 6.9, y: 2.25, w: 5.4, h: 0.35, fontFace: FONT_BODY, fontSize: 10.8, bold: true, color: TERRACOTTA, charSpacing: 0.5, margin: 0 });
+  const rows = [
+    ["treated share r", "n treated", "n holdout", "SE", "z", "power"],
+    ["0.50", "3,000", "3,000", "0.0115", "-5.07", "~1.00"],
+    ["0.70", "4,200", "1,800", "0.0126", "-4.64", "~1.00"],
+    ["0.80", "4,800", "1,200", "0.0144", "-4.05", "0.98"],
+    ["0.90*", "5,400", "600", "0.0192", "-3.04", "0.86"],
+    ["0.95", "5,700", "300", "0.0264", "-2.21", "0.60"],
+  ];
+  let ry = 2.68;
+  const colX = [6.9, 8.15, 9.15, 10.15, 10.95, 11.65];
+  rows.forEach((row, i) => {
+    row.forEach((cell, ci) => {
+      s.addText(cell, {
+        x: colX[ci], y: ry, w: (colX[ci + 1] ?? 12.55) - colX[ci], h: 0.34,
+        fontFace: FONT_BODY, fontSize: 10, bold: i === 0, color: i === 0 ? TERRACOTTA : (i === 4 ? TERRACOTTA : WHITE),
+        align: ci === 0 ? "left" : "right", margin: 0, valign: "middle",
+      });
+    });
+    ry += 0.36;
+  });
+  s.addText("* actual design. Holding total n and the OBSERVED effect fixed, power stays reasonable (~0.86) at "
+    + "the actual 90/10 split — the point of running this table is to show that choice was checked, not assumed.", {
+    x: 6.9, y: 4.95, w: 5.5, h: 1.6, fontFace: FONT_BODY, fontSize: 10.8, italic: true, color: ICE, margin: 0, lineSpacingMultiple: 1.25,
+  });
+
+  s.addNotes(
+    "Only bring this slide up if asked to defend the 90/10 split, or asked to derive SE/z/power by hand. The HV "
+    + "tier's own table (not shown) looks even more comfortable since its effect size is larger; LV/SMS is the "
+    + "more conservative case worth having ready. This is the same SE→z→power chain used to originally size the "
+    + "real project's A/B test allocation -- reused here to check the holdout fraction, not just to size a test "
+    + "from scratch."
+  );
 }
 
 pres.writeFile({ fileName: path.join(__dirname, "vanguard_dda_deck.pptx") }).then(() => {
