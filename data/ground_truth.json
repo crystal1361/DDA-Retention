@@ -1,19 +1,11 @@
 {
+  "hv_value_percentile": 0.5,
   "rdd_cutoff": 30.0,
   "rdd_true_effect_logit": -0.9,
-  "did_value_tier_labels": [
-    "tier1_top25pct",
-    "tier2_next25pct",
-    "tier3_next25pct",
-    "tier4_bottom25pct"
-  ],
-  "did_adoption_months": {
-    "tier1_top25pct": 8,
-    "tier2_next25pct": 14,
-    "tier3_next25pct": 20,
-    "tier4_bottom25pct": null
-  },
+  "did_launch_month": 12,
   "did_true_effect_logit_max": -0.9,
   "did_ramp_months": 3,
-  "dormant_true_effect_logit": -0.5
+  "dormant_holdout_frac": 0.1,
+  "dormant_cashback_effect_logit": -0.75,
+  "dormant_sms_effect_logit": -0.35
 }
