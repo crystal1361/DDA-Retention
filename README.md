@@ -128,12 +128,12 @@ batch-pipeline-vs-live-service boundary this is deliberately drawn at.
 
 | Layer | Result |
 |---|---|
-| Predictive (multi-class churn mode) | ROC-AUC 0.65-0.72 per mode, 2.8x-3.2x lift at top decile |
+| Predictive (multi-class churn mode) | ROC-AUC 0.66-0.74 per mode, 2.1x-3.8x lift at top decile; top drivers are plain account facts (prior dormancy streak, product count, tenure), not engineered scores |
 | RDD (30% withdrawal -> RM contact, HV only) | naive -0.2pp (biased, near zero) vs. robust -8.3pp [-12.3, -4.3], p<0.001; within ~1pp of true injected local effect |
 | DiD (2-group, HV vs. LV, single launch date) | 2x2 differencing -5.8pp vs. regression -5.8pp (agree almost exactly; true: -5.1pp) |
 | Dormant RCT (tier-stratified randomized holdout) | HV cashback: -10.8pp [-14.5, -7.1], p<0.001 (true: -10.4pp). LV SMS: -5.8pp [-9.8, -1.9], p=0.002 (true: -6.0pp). 0/10 covariate-balance tests flagged. |
-| Optimization (ILP vs. heuristic) | +49.4% net expected value protected at equal budget & RM capacity ($405,066 vs. $271,193 per 10,000 scored accounts) |
-| Business impact | +$133,873 net value per 10,000 scored accounts; scales linearly with book size (see `output/business_impact_summary.json` for the full recommendation set) |
+| Optimization (ILP vs. heuristic) | +64.3% net expected value protected at equal budget & RM capacity ($429,072 vs. $261,146 per 10,000 scored accounts) |
+| Business impact | +$167,927 net value per 10,000 scored accounts; scales linearly with book size (see `output/business_impact_summary.json` for the full recommendation set) |
 
 Every effect size above is now design-based (RDD's no-manipulation check,
 DiD's parallel-trends check, and the dormant RCT's randomization-balance
